@@ -1,0 +1,2823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roll Call — Learning Ledger</title>
+<link rel="icon" type="image/png" href="/assets/favicon.png">
+<style>
+
+  :root{
+    --ink:#1E2B22;
+    --ink-soft:#2C3D31;
+    --paper:#E9E4D3;
+    --paper-hi:#F3EFE2;
+    --line:#B9AE93;
+    --gold:#C99A3E;
+    --gold-deep:#9C7526;
+    --teal:#2F6E62;
+    --teal-soft:#DCE8E2;
+    --rose:#B24C3D;
+    --rose-soft:#F1DCD5;
+    --ink-70: rgba(30,43,34,0.7);
+    --ink-45: rgba(30,43,34,0.45);
+    --shadow: 0 1px 0 rgba(30,43,34,0.08);
+    --radius: 3px;
+    --serif: Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Times New Roman', serif;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif;
+    --mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      linear-gradient(var(--paper), var(--paper)) ,
+      repeating-linear-gradient(180deg, transparent, transparent 33px, rgba(30,43,34,0.055) 34px);
+    color:var(--ink);
+    font-family:var(--sans);
+    min-height:100vh;
+  }
+  #app{min-height:100vh; display:flex; flex-direction:column;}
+  a{color:inherit;}
+  button{font-family:inherit; cursor:pointer;}
+  input,select,textarea{font-family:inherit; font-size:14px;}
+
+  /* ---------- Topbar ---------- */
+  .topbar{
+    background:var(--ink);
+    color:var(--paper-hi);
+    padding:16px 28px;
+    display:flex; align-items:center; justify-content:space-between;
+    border-bottom:3px double var(--gold);
+  }
+  .brand{display:flex; align-items:baseline; gap:10px;}
+  .brand .mark{
+    font-family:var(--serif); font-weight:700; font-size:22px; letter-spacing:0.5px;
+  }
+  .brand .eyebrow{
+    font-family:var(--mono); font-size:10px; letter-spacing:2.5px; text-transform:uppercase; color:var(--gold);
+  }
+  .who{display:flex; align-items:center; gap:14px; font-size:13px;}
+  .who .name{font-weight:600;}
+  .who .role-chip{
+    font-family:var(--mono); font-size:10px; letter-spacing:1.5px; text-transform:uppercase;
+    border:1px solid var(--gold); color:var(--gold); padding:3px 8px; border-radius:20px;
+  }
+  .switch-link{
+    background:none; border:none; color:var(--paper-hi); opacity:0.65; text-decoration:underline;
+    font-size:12px; padding:0;
+  }
+  .switch-link:hover{opacity:1;}
+
+  /* ---------- Layout ---------- */
+  .content{flex:1; max-width:1080px; width:100%; margin:0 auto; padding:32px 28px 80px;}
+  .tabs{display:flex; gap:4px; border-bottom:1px solid var(--line); margin-bottom:28px;}
+  .tab{
+    padding:10px 18px; background:none; border:none; font-size:13px; font-weight:600;
+    color:var(--ink-70); border-bottom:2px solid transparent; letter-spacing:0.3px;
+  }
+  .tab.active{color:var(--ink); border-bottom-color:var(--gold);}
+  .tab:hover{color:var(--ink);}
+
+  h1.page-title{font-family:var(--serif); font-size:28px; margin:0 0 4px;}
+  .page-sub{color:var(--ink-70); font-size:14px; margin:0 0 24px;}
+
+  /* ---------- Cards ---------- */
+  .card{
+    background:var(--paper-hi);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:20px 22px;
+    margin-bottom:16px;
+    box-shadow: var(--shadow);
+  }
+  .card-head{display:flex; justify-content:space-between; align-items:flex-start; gap:12px;}
+  .card-title{font-family:var(--serif); font-size:19px; margin:0 0 4px;}
+  .card-desc{color:var(--ink-70); font-size:13.5px; margin:0; line-height:1.5;}
+  .meta-row{display:flex; gap:16px; margin-top:10px; font-family:var(--mono); font-size:11px; color:var(--ink-45); letter-spacing:0.5px;}
+
+  .empty-state{
+    border:1px dashed var(--line); border-radius:var(--radius); padding:28px; text-align:center;
+    color:var(--ink-70); font-size:14px; background:rgba(255,255,255,0.3);
+  }
+
+  /* ---------- Buttons ---------- */
+  .btn{
+    border-radius:20px; padding:8px 16px; font-size:13px; font-weight:600; border:1px solid var(--ink);
+    background:var(--ink); color:var(--paper-hi); letter-spacing:0.2px;
+  }
+  .btn:hover{background:var(--ink-soft);}
+  .btn-ghost{background:transparent; color:var(--ink); border:1px solid var(--line);}
+  .btn-ghost:hover{border-color:var(--ink);}
+  .btn-gold{background:var(--gold); border-color:var(--gold-deep); color:var(--ink);}
+  .btn-gold:hover{background:var(--gold-deep); color:var(--paper-hi);}
+  .btn-rose{background:transparent; border:1px solid var(--rose); color:var(--rose);}
+  .btn-rose:hover{background:var(--rose); color:white;}
+  .btn-sm{padding:5px 12px; font-size:12px;}
+  .btn:disabled{opacity:0.45; cursor:not-allowed;}
+  .btn-row{display:flex; gap:8px; flex-wrap:wrap;}
+
+  /* ---------- Forms ---------- */
+  .field{margin-bottom:12px;}
+  .field label{display:block; font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--ink-70); margin-bottom:5px; font-weight:600;}
+  .input, .textarea, select.input{
+    width:100%; padding:9px 11px; border:1px solid var(--line); border-radius:var(--radius);
+    background:var(--paper-hi); color:var(--ink); font-size:14px;
+  }
+  .input:focus, .textarea:focus, select.input:focus{outline:2px solid var(--gold); outline-offset:1px; border-color:var(--gold);}
+  .textarea{min-height:64px; resize:vertical;}
+  .opt-row{display:flex; align-items:center; gap:8px; margin-bottom:6px;}
+  .opt-row input[type=radio]{accent-color:var(--teal); flex-shrink:0;}
+  .opt-row .input{flex:1;}
+
+  /* ---------- Stamp badges ---------- */
+  .stamp{
+    display:inline-flex; align-items:center; justify-content:center;
+    font-family:var(--mono); font-size:10.5px; letter-spacing:1px; text-transform:uppercase; font-weight:700;
+    padding:5px 12px; border-radius:20px; border:1.5px dashed currentColor; transform:rotate(-2deg);
+    white-space:nowrap;
+  }
+  .stamp.gold{color:var(--gold-deep); background:rgba(201,154,62,0.12);}
+  .stamp.teal{color:var(--teal); background:var(--teal-soft);}
+  .stamp.rose{color:var(--rose); background:var(--rose-soft);}
+  .stamp.ink{color:var(--ink-70); background:rgba(30,43,34,0.06);}
+
+  /* ---------- Divider / section ---------- */
+  .hairline{border:none; border-top:1px solid var(--line); margin:16px 0;}
+  .subsection-title{font-family:var(--mono); font-size:11px; letter-spacing:1.5px; text-transform:uppercase; color:var(--ink-70); margin:18px 0 10px; display:flex; align-items:center; gap:8px;}
+  .subsection-title::after{content:""; flex:1; border-top:1px dotted var(--line);}
+
+  /* ---------- Video / quiz list items ---------- */
+  .list-item{
+    display:flex; justify-content:space-between; align-items:center; gap:10px;
+    padding:9px 12px; border:1px solid var(--line); border-radius:var(--radius); margin-bottom:8px;
+    background:rgba(255,255,255,0.4); font-size:13.5px;
+  }
+  .list-item .li-title{font-weight:600;}
+  .list-item .li-sub{color:var(--ink-45); font-size:11.5px; font-family:var(--mono);}
+
+  details.expander{border:1px solid var(--line); border-radius:var(--radius); margin-bottom:16px; background:var(--paper-hi); overflow:hidden;}
+  details.expander>summary{
+    list-style:none; cursor:pointer; padding:16px 20px; display:flex; justify-content:space-between; align-items:center;
+  }
+  details.expander>summary::-webkit-details-marker{display:none;}
+  details.expander[open]>summary{border-bottom:1px solid var(--line);}
+  .expander-body{padding:18px 20px;}
+  .chevron{font-family:var(--mono); color:var(--ink-45); font-size:12px;}
+
+  /* ---------- Video embed ---------- */
+  .video-embed{position:relative; padding-top:56.25%; border-radius:var(--radius); overflow:hidden; border:1px solid var(--line); margin-bottom:10px;}
+  .video-embed iframe{position:absolute; inset:0; width:100%; height:100%; border:0;}
+
+  /* ---------- Table ---------- */
+  table.ledger{width:100%; border-collapse:collapse; font-size:13px;}
+  table.ledger th{
+    text-align:left; font-family:var(--mono); font-size:10.5px; text-transform:uppercase; letter-spacing:1px;
+    color:var(--ink-70); padding:8px 10px; border-bottom:1px solid var(--ink);
+  }
+  table.ledger td{padding:9px 10px; border-bottom:1px solid var(--line); vertical-align:middle;}
+  table.ledger tr:hover td{background:rgba(201,154,62,0.06);}
+
+  /* ---------- Quiz question review ---------- */
+  .q-block{margin-bottom:16px; padding-bottom:14px; border-bottom:1px dotted var(--line);}
+  .q-block:last-child{border-bottom:none;}
+  .q-text{font-weight:600; margin-bottom:8px; font-size:14px;}
+  .ans-row{display:flex; align-items:center; gap:8px; font-size:13px; padding:4px 0; color:var(--ink-70);}
+  .ans-row.correct{color:var(--teal); font-weight:600;}
+  .ans-row.wrong{color:var(--rose); font-weight:600; text-decoration:line-through;}
+  .ans-mark{font-family:var(--mono); width:14px; flex-shrink:0;}
+
+  /* ---------- Login ---------- */
+  .login-wrap{flex:1; display:flex; align-items:center; justify-content:center; padding:40px 20px;}
+  .login-card{
+    background:var(--paper-hi); border:1px solid var(--line); border-radius:var(--radius);
+    padding:44px 40px; width:100%; max-width:420px; box-shadow:0 2px 0 rgba(30,43,34,0.08);
+    position:relative;
+  }
+  .login-card::before{
+    content:""; position:absolute; top:0; left:24px; right:24px; height:3px;
+    background:repeating-linear-gradient(90deg, var(--gold) 0 8px, transparent 8px 14px);
+  }
+  .login-eyebrow{font-family:var(--mono); font-size:11px; letter-spacing:2.5px; text-transform:uppercase; color:var(--gold-deep); margin-bottom:6px;}
+  .login-title{font-family:var(--serif); font-size:30px; margin:0 0 8px;}
+  .login-sub{color:var(--ink-70); font-size:13.5px; margin:0 0 26px; line-height:1.5;}
+  .role-picker{display:flex; gap:10px; margin-bottom:20px;}
+  .role-opt{
+    flex:1; border:1.5px solid var(--line); border-radius:var(--radius); padding:14px 10px; text-align:center;
+    background:transparent; font-size:13px; font-weight:600; color:var(--ink-70);
+  }
+  .role-opt.selected{border-color:var(--gold-deep); background:rgba(201,154,62,0.12); color:var(--ink);}
+  .role-opt .role-icon{display:block; font-family:var(--serif); font-size:20px; margin-bottom:4px;}
+
+  /* ---------- Sparkline ---------- */
+  .spark-wrap{display:flex; align-items:center; gap:10px;}
+  .spark-num{font-family:var(--mono); font-size:12px; color:var(--ink-70); min-width:38px;}
+
+  /* ---------- Toast ---------- */
+  #toast{
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(12px);
+    background:var(--ink); color:var(--paper-hi); padding:10px 20px; border-radius:20px; font-size:13px;
+    opacity:0; pointer-events:none; transition:all 0.25s ease; border:1px solid var(--gold); z-index:50;
+  }
+  #toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  .grid-2{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  @media (max-width:640px){ .grid-2{grid-template-columns:1fr;} .content{padding:22px 16px 60px;} .topbar{padding:14px 16px; flex-wrap:wrap; gap:10px;} }
+
+  .small-muted{font-size:11.5px; color:var(--ink-45);}
+  .link-btn{background:none; border:none; color:var(--teal); text-decoration:underline; font-size:12.5px; padding:0;}
+
+  @keyframes pulseGlow {
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(201,154,62,0.6); }
+    70% { transform: scale(1.02); box-shadow: 0 0 0 6px rgba(201,154,62,0); }
+    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(201,154,62,0); }
+  }
+  .pulse-highlight {
+    animation: pulseGlow 1.5s infinite;
+  }
+
+  /* ---------- PPT & Slide Deck Styles ---------- */
+  .ppt-deck-wrap{
+    border: 1.5px solid var(--gold);
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--paper-hi);
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
+  }
+  .ppt-deck-header{
+    background: rgba(30,43,34,0.06);
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .ppt-stage{
+    background: linear-gradient(135deg, #FAF8F2 0%, #F4EFE3 100%);
+    min-height: 380px;
+    padding: 28px 32px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--line);
+  }
+  .ppt-slide-title{
+    font-family: var(--serif);
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--gold);
+    letter-spacing: 0.3px;
+  }
+  .ppt-slide-content{
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .ppt-bullet{
+    font-size: 14.5px;
+    line-height: 1.55;
+    color: var(--ink);
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .ppt-bullet-lvl-0{ margin-left: 0; font-weight: 500; }
+  .ppt-bullet-lvl-1{ margin-left: 20px; font-size: 13.5px; color: var(--ink-70); }
+  .ppt-bullet-lvl-2{ margin-left: 40px; font-size: 12.5px; color: var(--ink-70); }
+  .ppt-bullet-marker{
+    color: var(--gold-deep);
+    font-weight: bold;
+    font-family: var(--mono);
+    font-size: 11px;
+    flex-shrink: 0;
+  }
+  .ppt-images-grid{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+    margin: 12px 0;
+  }
+  .ppt-slide-img{
+    max-height: 220px;
+    max-width: 100%;
+    object-fit: contain;
+    border-radius: var(--radius);
+    border: 1px solid var(--line);
+    background: #fff;
+    padding: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .ppt-notes-panel{
+    background: #FFFDF7;
+    border: 1px dashed var(--gold);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    margin-top: 12px;
+    line-height: 1.45;
+  }
+  .ppt-notes-badge{
+    font-family: var(--mono);
+    font-size: 10.5px;
+    text-transform: uppercase;
+    color: var(--gold-deep);
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .ppt-footer-bar{
+    padding: 10px 14px;
+    background: rgba(255,255,255,0.7);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .ppt-chip{
+    padding: 3px 8px;
+    font-size: 11px;
+    border-radius: 12px;
+    font-family: var(--mono);
+    border: 1px solid var(--line);
+    background: transparent;
+    cursor: pointer;
+  }
+  .ppt-chip.active{
+    background: var(--gold);
+    border-color: var(--gold-deep);
+    color: #fff;
+    font-weight: 700;
+  }
+  .ppt-fullscreen-overlay{
+    position: fixed;
+    inset: 0;
+    background: rgba(18, 25, 20, 0.95);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    padding: 24px;
+    backdrop-filter: blur(4px);
+  }
+  .ppt-fullscreen-stage{
+    flex: 1;
+    background: #FAF8F2;
+    border-radius: 6px;
+    padding: 36px 48px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow-y: auto;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  }
+</style>
+
+</head>
+<body>
+<div id="app"></div>
+<div id="toast"></div>
+
+<script>
+/* =========================================================================
+   ROLL CALL — a two-persona learning ledger (teacher / student)
+   Backed by FastAPI REST API + SQLite
+   ========================================================================= */
+
+const API_BASE = (window.location.protocol === 'file:' || !window.location.origin || window.location.origin === 'null')
+  ? 'http://localhost:8000'
+  : (window.location.port === '8000' || window.location.port === '5173' || window.location.port === '3000' ? '' : 'http://localhost:8000');
+
+let state = {
+  identity: null,      // {id, name, role}
+  db: { courses: [], results: [] },
+  userNames: {},       // id -> name cache
+  loading: true,
+  teacherTab: 'courses',
+  studentTab: 'browse',
+  openDetails: new Set(),      // ids of open <details> to persist across renders
+  videoTabs: {},               // courseId -> 'upload' | 'youtube'
+  videoCurrentChunk: {},       // videoId -> current active chunk index (default 0)
+  presentationTabs: {},        // courseId -> 'upload' | 'embed'
+  activePresentationSlide: {}, // presentationId -> slideIndex (default 0)
+  presentationNotesOpen: {},   // presentationId -> boolean
+  activeCoursePres: {},        // courseId -> active presentationId
+  fullscreenPresentationId: null, // presentationId or null
+  activeQuiz: null,            // {courseId, quizId}
+  editingCourses: {},          // courseId -> boolean
+};
+
+const draft = {
+  quizBuilders: {},   // courseId -> [{text, options:['','','',''], correct:0}]
+  quizAnswers: {},    // quizId -> {questionId: optionIndex}
+  videoChunks: {},    // courseId -> [{start: '00:30', end: '00:32', title: ''}]
+  videoYtChunks: {},  // courseId -> [{start: '00:30', end: '00:32', title: ''}]
+  slideMappings: {},  // presId -> [{slide_index, video_id, start, end}]
+};
+
+function parseTimestamp(val) {
+  if (typeof val === 'number') return val;
+  if (!val) return 0;
+  val = String(val).trim();
+  if (!val) return 0;
+  if (!isNaN(Number(val))) return Number(val);
+  const parts = val.split(':').map(Number);
+  if (parts.length === 3) return (parts[0] * 3600) + (parts[1] * 60) + parts[2];
+  if (parts.length === 2) return (parts[0] * 60) + parts[1];
+  if (parts.length === 1) return parts[0];
+  return 0;
+}
+
+function formatTimestamp(seconds) {
+  const s = Math.round(Number(seconds) || 0);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const rem = s % 60;
+  const pad = (n) => String(n).padStart(2, '0');
+  if (h > 0) return `${pad(h)}:${pad(m)}:${pad(rem)}`;
+  return `${pad(m)}:${pad(rem)}`;
+}
+
+function formatBytes(bytes, decimals = 1) {
+  if (!bytes || bytes === 0) return '0 B';
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+}
+
+function getVideoSrc(v) {
+  if (!v) return '';
+  const base = API_BASE || '';
+  if (v.url) {
+    return v.url.startsWith('http') ? v.url : `${base}${v.url}`;
+  }
+  return `${base}/api/videos/${v.id}/stream`;
+}
+
+function getLinkedVideoForSlide(course, p, currentIdx) {
+  if (!course || !course.videos || course.videos.length === 0) return null;
+  const slides = p ? (p.slides || []) : [];
+  if (slides.length === 0) {
+    return { video: course.videos[0], isDirect: false, isDefault: true, sourceSlideIndex: null, start: 0, end: 0 };
+  }
+
+  const idx = Math.min(Math.max(0, currentIdx || 0), slides.length - 1);
+  const curSlide = slides[idx];
+  const curVidId = curSlide ? (curSlide.videoId || curSlide.video_id) : null;
+  if (curVidId) {
+    const v = course.videos.find(x => x.id === curVidId);
+    if (v) {
+      return {
+        video: v,
+        isDirect: true,
+        isDefault: false,
+        sourceSlideIndex: idx,
+        start: curSlide.videoStart || curSlide.video_start || 0,
+        end: curSlide.videoEnd || curSlide.video_end || 0
+      };
+    }
+  }
+
+  // Backwards search for the most recent previous slide with a linked video
+  for (let i = idx - 1; i >= 0; i--) {
+    const prevSlide = slides[i];
+    const prevVidId = prevSlide ? (prevSlide.videoId || prevSlide.video_id) : null;
+    if (prevVidId) {
+      const v = course.videos.find(x => x.id === prevVidId);
+      if (v) {
+        return {
+          video: v,
+          isDirect: false,
+          isDefault: false,
+          sourceSlideIndex: i,
+          start: prevSlide.videoStart || prevSlide.video_start || 0,
+          end: prevSlide.videoEnd || prevSlide.video_end || 0
+        };
+      }
+    }
+  }
+
+  // Fallback to first course video
+  return {
+    video: course.videos[0],
+    isDirect: false,
+    isDefault: true,
+    sourceSlideIndex: null,
+    start: 0,
+    end: 0
+  };
+}
+
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(showToast._h);
+  showToast._h = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+function extractYoutubeId(input){
+  input = (input || '').trim();
+  if(/^[a-zA-Z0-9_-]{11}$/.test(input)) return input;
+  const patterns = [
+    /(?:youtu\.be\/)([a-zA-Z0-9_-]{11})/,
+    /(?:youtube\.com\/watch\?v=)([a-zA-Z0-9_-]{11})/,
+    /(?:youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
+    /(?:youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/,
+    /[?&]v=([a-zA-Z0-9_-]{11})/
+  ];
+  for(const p of patterns){ const m = input.match(p); if(m) return m[1]; }
+  return null;
+}
+
+function emptyDb(){ return { courses: [], results: [] }; }
+
+/* ---------------- REST API Client ---------------- */
+async function api(path, options = {}){
+  const headers = { ...(options.headers || {}) };
+  // Only set application/json if body is NOT FormData (browser handles multipart boundary)
+  if (!(options.body instanceof FormData)) {
+    headers['Content-Type'] = headers['Content-Type'] || 'application/json';
+  }
+  if(state.identity && state.identity.id){
+    headers['X-User-Id'] = state.identity.id;
+  }
+  const cleanPath = path.startsWith('/') ? path : '/' + path;
+  const url = `${API_BASE}${cleanPath}`;
+  try {
+    const res = await fetch(url, { ...options, headers });
+    if(!res.ok){
+      let errDetail = `Server error (${res.status})`;
+      try {
+        const errJson = await res.json();
+        if(errJson && errJson.detail) errDetail = errJson.detail;
+      } catch(e) {}
+      throw new Error(errDetail);
+    }
+    if(res.status === 204) return null;
+    return await res.json();
+  } catch(e) {
+    const msg = (e && e.message) ? e.message : '';
+    if(msg.includes('Failed to fetch') || msg.includes('Load failed') || msg.includes('NetworkError') || msg.includes('network') || msg.includes('fetch')){
+      throw new Error('Cannot connect to backend server at ' + (API_BASE || 'http://localhost:8000') + '. Please start the server with ./start.sh or ./start.command.');
+    }
+    throw e;
+  }
+}
+
+
+async function loadAll(){
+  try{
+    const stored = localStorage.getItem('rollcall_identity');
+    state.identity = stored ? JSON.parse(stored) : null;
+    if(state.identity && state.identity.id){
+      state.userNames[state.identity.id] = state.identity.name;
+    }
+  }catch(e){ state.identity = null; }
+
+  await refreshDb();
+  state.loading = false;
+  render();
+}
+
+async function saveIdentity(identity){
+  if(identity){
+    localStorage.setItem('rollcall_identity', JSON.stringify(identity));
+  } else {
+    localStorage.removeItem('rollcall_identity');
+  }
+}
+
+async function refreshDb(){
+  try{
+    const courses = await api('/courses');
+    state.db.courses = courses || [];
+
+    if(state.identity){
+      state.userNames[state.identity.id] = state.identity.name;
+      if(state.identity.role === 'teacher'){
+        let allResults = [];
+        for(const c of state.db.courses){
+          try{
+            const roster = await api(`/courses/${c.id}/roster`);
+            if(roster){
+              (roster.pending||[]).forEach(u=>{ state.userNames[u.id] = u.name; });
+              (roster.enrolled||[]).forEach(u=>{ state.userNames[u.id] = u.name; });
+            }
+            const cResults = await api(`/courses/${c.id}/results`);
+            if(cResults){
+              for(const s of cResults){
+                state.userNames[s.student_id || s.studentId] = s.student_name || s.studentName;
+                allResults.push(...(s.attempts||[]));
+              }
+            }
+          }catch(e){ /* optional endpoint catch */ }
+        }
+        state.db.results = allResults;
+      } else {
+        const myResults = await api(`/students/${state.identity.id}/results`);
+        state.db.results = myResults || [];
+      }
+    }
+  }catch(e){
+    console.warn('API refresh error:', e.message);
+    if(!state.db) state.db = emptyDb();
+  }
+}
+
+/* ---------------- helpers on db ---------------- */
+function findCourse(id){ return state.db.courses.find(c=>c.id===id); }
+function findQuiz(course, quizId){ return (course.quizzes||[]).find(q=>q.id===quizId); }
+function userName(id){
+  if(state.userNames && state.userNames[id]) return state.userNames[id];
+  if(state.identity && state.identity.id===id) return state.identity.name;
+  const r = state.db.results.find(r=> (r.studentId===id || r.student_id===id));
+  return r ? (r.studentName || r.student_name) : id;
+}
+
+/* ================= RENDER ROOT ================= */
+function render(){
+  const app = document.getElementById('app');
+  if(state.loading){ app.innerHTML = `<div class="login-wrap"><span class="small-muted">Loading roll book…</span></div>`; return; }
+  if(!state.identity){ app.innerHTML = loginView(); bindLoginEvents(); return; }
+
+  const isTeacher = state.identity.role === 'teacher';
+  app.innerHTML = `
+    ${topbar()}
+    <div class="content">
+      ${isTeacher ? teacherView() : studentView()}
+    </div>
+    ${renderFullscreenModal()}
+  `;
+  bindGlobalEvents();
+  if(isTeacher) bindTeacherEvents(); else bindStudentEvents();
+  bindVideoPlayerEvents();
+  bindPresentationViewerEvents();
+}
+
+
+/* ================= TOPBAR ================= */
+function topbar(){
+  const isTeacher = state.identity.role === 'teacher';
+  return `
+  <div class="topbar">
+    <div class="brand" style="display:flex; align-items:center; gap:10px;">
+      <img src="/assets/favicon.png" alt="Roll Call" style="width:30px; height:30px; border-radius:6px; object-fit:contain;" />
+      <div>
+        <span class="mark">Roll Call</span>
+        <span class="eyebrow" style="display:block;">Localhost LMS · 100% Offline Ready</span>
+      </div>
+    </div>
+    <div class="who">
+      <span class="name">${escapeHtml(state.identity.name)}</span>
+      <span class="role-chip">${isTeacher ? 'Teacher' : 'Student'}</span>
+      <button class="switch-link" id="switch-role">Switch persona</button>
+    </div>
+  </div>`;
+}
+
+/* ================= LOGIN ================= */
+let selectedRole = 'student';
+function loginView(){
+  return `
+  <div class="login-wrap">
+    <div class="login-card">
+      <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
+        <img src="/assets/favicon.png" alt="Roll Call" style="width:48px; height:48px; object-fit:contain;" />
+        <div>
+          <div class="login-eyebrow" style="margin-bottom:2px;">Localhost LMS · Offline</div>
+          <div style="font-family:var(--serif); font-size:20px; font-weight:700;">Roll Call</div>
+        </div>
+      </div>
+      <h1 class="login-title">Sign in</h1>
+
+      <p class="login-sub">Welcome to Roll Call — a self-contained local LMS. Teachers upload local video files and build quizzes; students stream lectures and take auto-graded assessments with zero internet needed.</p>
+      <div class="role-picker">
+        <button class="role-opt ${selectedRole==='teacher'?'selected':''}" data-role="teacher"><span class="role-icon">✎</span>Teacher</button>
+        <button class="role-opt ${selectedRole==='student'?'selected':''}" data-role="student"><span class="role-icon">🎓</span>Student</button>
+      </div>
+      <div class="field">
+        <label for="name-input">Your name</label>
+        <input class="input" id="name-input" placeholder="e.g. Asha Rao" autocomplete="off">
+      </div>
+      <button class="btn btn-gold" id="login-btn" style="width:100%; padding:11px;">Enter the ledger</button>
+    </div>
+  </div>`;
+}
+
+
+function bindLoginEvents(){
+  document.querySelectorAll('.role-opt').forEach(btn=>{
+    btn.onclick = ()=>{ selectedRole = btn.dataset.role; render(); document.getElementById('name-input').focus(); };
+  });
+  document.getElementById('login-btn').onclick = async ()=>{
+    const name = document.getElementById('name-input').value.trim();
+    if(!name){ showToast('Enter your name to continue.'); return; }
+    try {
+      const user = await api('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ name, role: selectedRole })
+      });
+      state.identity = user;
+      state.userNames[user.id] = user.name;
+      await saveIdentity(user);
+      await refreshDb();
+      showToast(`Welcome, ${name}.`);
+      render();
+    } catch(err) {
+      showToast(err.message);
+    }
+  };
+  document.getElementById('name-input').addEventListener('keydown', e=>{
+    if(e.key==='Enter') document.getElementById('login-btn').click();
+  });
+}
+
+function bindGlobalEvents(){
+  const sw = document.getElementById('switch-role');
+  if(sw) sw.onclick = async ()=>{
+    await saveIdentity(null);
+    state.identity = null;
+    state.db = emptyDb();
+    render();
+  };
+}
+
+/* ================= TEACHER VIEW ================= */
+function teacherView(){
+  const tabs = [['courses','Courses & Content'],['students','Roster & Requests'],['results','Results']];
+  return `
+    <h1 class="page-title">Teacher desk</h1>
+    <p class="page-sub">Build out your courses, manage who's enrolled, and watch how the class is doing.</p>
+    <div class="tabs">
+      ${tabs.map(([k,l])=>`<button class="tab ${state.teacherTab===k?'active':''}" data-tab="${k}">${l}</button>`).join('')}
+    </div>
+    ${state.teacherTab==='courses' ? teacherCoursesTab() : ''}
+    ${state.teacherTab==='students' ? teacherStudentsTab() : ''}
+    ${state.teacherTab==='results' ? teacherResultsTab() : ''}
+  `;
+}
+
+function teacherCoursesTab(){
+  const courses = state.db.courses;
+  return `
+    <div class="card">
+      <div class="subsection-title">New course</div>
+      <div class="field"><label>Title</label><input class="input" id="new-course-title" placeholder="e.g. Algebra I"></div>
+      <div class="field"><label>Description</label><textarea class="textarea" id="new-course-desc" placeholder="What will students learn?"></textarea></div>
+      <button class="btn btn-gold" id="create-course-btn">Add course</button>
+    </div>
+
+    ${courses.length===0 ? `<div class="empty-state">No courses yet. Add your first one above — it'll appear here for students to request.</div>` : ''}
+
+    ${courses.map(c=>courseManageCard(c)).join('')}
+  `;
+}
+
+function renderVideoPlayer(v, isTeacherPreview = false, overrideStart = 0, overrideEnd = 0){
+  const isLocal = (v.videoType === 'local' || v.video_type === 'local' || !v.youtubeId);
+  const videoSrc = getVideoSrc(v);
+  const chunks = v.chunks || [];
+  const hasChunks = chunks.length > 0;
+  
+  if(!hasChunks){
+    const sStart = Number(overrideStart || 0);
+    const sEnd = Number(overrideEnd || 0);
+    return isLocal ? `
+      <div style="position:relative; border-radius:var(--radius); overflow:hidden; border:1px solid var(--line); background:#000;">
+        <video id="player-${v.id}" controls playsinline preload="metadata" style="width:100%; max-height:460px; display:block;" src="${videoSrc}"
+               data-chunk-start="${sStart}"
+               data-chunk-end="${sEnd}"
+               data-vid="${v.id}">
+          <source src="${videoSrc}" type="${escapeAttr(v.contentType || 'video/mp4')}">
+          Your browser does not support HTML5 video streaming.
+        </video>
+      </div>
+    ` : `
+      <div class="video-embed"><iframe id="player-${v.id}" src="https://www.youtube.com/embed/${v.youtubeId || v.youtube_id}${sStart>0?`?start=${Math.floor(sStart)}${sEnd>0?`&end=${Math.ceil(sEnd)}`:''}&autoplay=0`:''}" title="${escapeAttr(v.title)}" allowfullscreen></iframe></div>
+    `;
+  }
+
+  // Video has chunks configured
+  const currentIdx = Math.min(state.videoCurrentChunk[v.id] || 0, chunks.length - 1);
+  const activeChunk = chunks[currentIdx];
+  const isLastChunk = currentIdx >= chunks.length - 1;
+  const startSec = overrideStart > 0 ? overrideStart : parseTimestamp(activeChunk.start);
+  const endSec = overrideEnd > 0 ? overrideEnd : parseTimestamp(activeChunk.end);
+  const startFmt = formatTimestamp(startSec);
+  const endFmt = formatTimestamp(endSec);
+
+  return `
+    <div style="border:1.5px solid var(--gold); border-radius:var(--radius); overflow:hidden; background:var(--paper-hi); margin-bottom:12px;">
+      <!-- Chunk Header & Stepper -->
+      <div style="background:rgba(30,43,34,0.06); padding:10px 14px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <span class="stamp teal" style="font-size:10px; padding:2px 8px;">Segment ${currentIdx + 1} of ${chunks.length}</span>
+          <span style="font-weight:700; font-size:13.5px; font-family:var(--mono); color:var(--ink);">
+            ⏱ ${startFmt} ➔ ${endFmt}
+          </span>
+          ${activeChunk.title ? `<span style="font-weight:600; font-size:13px; color:var(--ink-70);">— ${escapeHtml(activeChunk.title)}</span>` : ''}
+        </div>
+        <div style="display:flex; gap:4px; flex-wrap:wrap;">
+          ${chunks.map((ck, cki)=>{
+            const ckStart = ck.startFormatted || formatTimestamp(ck.start);
+            return `
+              <button class="btn ${cki === currentIdx ? 'btn-gold' : 'btn-ghost'} btn-sm"
+                      style="padding:3px 8px; font-size:11px; border-radius:12px; font-family:var(--mono);"
+                      data-set-chunk="${v.id}|${cki}">
+                ${cki + 1}: ${ckStart}
+              </button>
+            `;
+          }).join('')}
+        </div>
+      </div>
+
+      <!-- Player Area -->
+      ${isLocal ? `
+        <div style="position:relative; background:#000; overflow:hidden;">
+          <video id="player-${v.id}" playsinline preload="metadata" controls
+                 style="width:100%; max-height:460px; display:block; margin:0 auto;"
+                 src="${videoSrc}"
+                 data-chunk-start="${startSec}"
+                 data-chunk-end="${endSec}"
+                 data-vid="${v.id}">
+            <source src="${videoSrc}" type="${escapeAttr(v.contentType || 'video/mp4')}">
+            Your browser does not support HTML5 video.
+          </video>
+        </div>
+      ` : `
+        <div class="video-embed">
+          <iframe id="player-${v.id}"
+                  src="https://www.youtube.com/embed/${v.youtubeId || v.youtube_id}?start=${Math.floor(startSec)}&end=${Math.ceil(endSec)}&autoplay=0"
+                  title="${escapeAttr(v.title)}"
+                  allowfullscreen></iframe>
+        </div>
+      `}
+
+      <!-- Chunk Controller Bar -->
+      <div style="padding:12px 14px; background:rgba(255,255,255,0.7); border-top:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <div style="display:flex; gap:8px; align-items:center;">
+          <button class="btn btn-ghost btn-sm" data-replay-chunk="${v.id}">⟲ Replay Segment (${startFmt})</button>
+          ${currentIdx > 0 ? `<button class="btn btn-ghost btn-sm" data-prev-chunk="${v.id}">◀ Prev Segment</button>` : ''}
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span id="chunk-status-${v.id}" style="font-size:12px; font-weight:600; color:var(--teal);"></span>
+          ${!isLastChunk ? `
+            <button class="btn btn-gold btn-sm" data-next-chunk="${v.id}" id="btn-next-chunk-${v.id}">
+              Next Segment (${chunks[currentIdx + 1].startFormatted || formatTimestamp(chunks[currentIdx + 1].start)} – ${chunks[currentIdx + 1].endFormatted || formatTimestamp(chunks[currentIdx + 1].end)}) ▶
+            </button>
+          ` : `
+            <span class="stamp teal" style="font-size:11px;">✓ Completed All ${chunks.length} Segments</span>
+          `}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function chunkBuilderBlock(courseId, isYt = false){
+  const targetArray = isYt ? (draft.videoYtChunks[courseId] || []) : (draft.videoChunks[courseId] || []);
+  const typeKey = isYt ? 'yt' : 'local';
+  return `
+    <div style="margin-top:12px; padding:12px 14px; background:rgba(30,43,34,0.04); border:1px dashed var(--line); border-radius:var(--radius);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:6px;">
+        <div>
+          <span style="font-weight:700; font-size:12.5px;">✂️ Play in Chunks / Segments (Optional)</span>
+          <div class="small-muted" style="font-size:11.5px;">Set time ranges (e.g. <code>00:30</code> to <code>00:32</code>, then <code>00:55</code> to <code>00:59</code>). Students will view segment-by-segment with a Next button.</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" data-add-chunk="${courseId}|${typeKey}" type="button" style="font-size:11.5px; padding:4px 10px;">+ Add Chunk</button>
+      </div>
+
+      ${targetArray.length > 0 ? `
+        <div style="margin-top:8px;">
+          ${targetArray.map((ck, cki)=>`
+            <div style="display:flex; gap:8px; align-items:center; margin-bottom:6px; flex-wrap:wrap;">
+              <span style="font-family:var(--mono); font-size:11px; font-weight:600; width:22px; color:var(--ink-70);">#${cki+1}</span>
+              <input class="input" style="width:105px; background:#fff; padding:6px 8px; font-size:12px; font-family:var(--mono);" placeholder="Start (00:30)" value="${escapeAttr(ck.start||'')}" data-chunk-field="${courseId}|${typeKey}|${cki}|start">
+              <span style="font-size:12px; color:var(--ink-45);">to</span>
+              <input class="input" style="width:105px; background:#fff; padding:6px 8px; font-size:12px; font-family:var(--mono);" placeholder="End (00:32)" value="${escapeAttr(ck.end||'')}" data-chunk-field="${courseId}|${typeKey}|${cki}|end">
+              <input class="input" style="flex:1; min-width:140px; background:#fff; padding:6px 8px; font-size:12px;" placeholder="Optional label (e.g. Part ${cki+1})" value="${escapeAttr(ck.title||'')}" data-chunk-field="${courseId}|${typeKey}|${cki}|title">
+              <button class="btn btn-rose btn-sm" style="padding:4px 8px; font-size:11px;" data-remove-chunk="${courseId}|${typeKey}|${cki}" type="button">✕</button>
+            </div>
+          `).join('')}
+        </div>
+      ` : `
+        <div class="small-muted" style="font-style:italic; font-size:11.5px; margin-top:4px;">No chunks configured (video plays continuously). Click "+ Add Chunk" to configure chunked playback.</div>
+      `}
+    </div>
+  `;
+}
+
+function renderPresentationViewer(p, isTeacherPreview = false, course = null){
+  if(!course){
+    course = findCourse(p.course_id || p.courseId);
+  }
+  const isLocal = (p.presentationType === 'local' || p.presentation_type === 'local');
+  const embedUrl = p.embedUrl || p.embed_url;
+  const slides = p.slides || [];
+  const currentIdx = Math.min(state.activePresentationSlide[p.id] || 0, Math.max(0, slides.length - 1));
+  const activeSlide = slides[currentIdx] || { title: p.title, text_blocks: [], tables: [], images: [], notes: '' };
+  const textBlocks = activeSlide.textBlocks || activeSlide.text_blocks || [];
+  const tables = activeSlide.tables || [];
+  const images = activeSlide.images || [];
+  const notes = activeSlide.notes || '';
+  const isNotesOpen = !!state.presentationNotesOpen[p.id];
+  const downloadUrl = `${API_BASE}/api/presentations/${p.id}/download`;
+
+  const linkInfo = getLinkedVideoForSlide(course, p, currentIdx);
+
+  // Top header button: Replaces download PPT button with "Play Video" when a video is associated
+  const actionButtonHtml = linkInfo && linkInfo.video
+    ? `<button class="btn btn-gold btn-sm" data-play-linked-video="${p.id}" id="btn-play-video-${p.id}" style="padding:3px 12px; font-size:11.5px; font-weight:700; display:inline-flex; align-items:center; gap:5px;" title="Play video associated with this slide">
+         ▶ Play Video
+       </button>`
+    : `<a href="${downloadUrl}" class="btn btn-ghost btn-sm" style="padding:3px 9px; font-size:11.5px; text-decoration:none;" download>
+         ⬇ PPTX
+       </a>`;
+
+  return `
+    <div class="ppt-and-video-unit" style="margin-bottom:18px;">
+      <!-- TOP: Presentation Window -->
+      <div class="ppt-deck-wrap" id="pres-viewer-${p.id}" style="margin-bottom:12px;">
+        <!-- Slide Toolbar Header -->
+        <div class="ppt-deck-header">
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span class="stamp gold" style="font-size:10px; padding:2px 8px;">Slide ${slides.length > 0 ? (currentIdx + 1) + ' of ' + slides.length : '1'}</span>
+            <span style="font-weight:700; font-size:13.5px; color:var(--ink);">${escapeHtml(p.title)}</span>
+          </div>
+
+          <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+            ${slides.length > 1 ? `
+              <div style="display:flex; gap:3px; max-width:240px; overflow-x:auto; padding:2px 0;">
+                ${slides.map((sl, sli)=>{
+                  const hasDirectVid = !!(sl.videoId || sl.video_id);
+                  return `
+                    <button class="ppt-chip ${sli === currentIdx ? 'active' : ''}" data-pres-slide="${p.id}|${sli}" title="${hasDirectVid ? '🎬 Video mapped to slide ' + (sli+1) : 'Slide ' + (sli+1)}">
+                      ${sli + 1}${hasDirectVid ? ' 🎬' : ''}
+                    </button>
+                  `;
+                }).join('')}
+              </div>
+            ` : ''}
+
+            ${notes ? `
+              <button class="btn ${isNotesOpen ? 'btn-gold' : 'btn-ghost'} btn-sm" style="padding:3px 9px; font-size:11.5px;" data-toggle-pres-notes="${p.id}">
+                📝 Notes
+              </button>
+            ` : ''}
+
+            <button class="btn btn-ghost btn-sm" style="padding:3px 9px; font-size:11.5px;" data-pres-fullscreen="${p.id}">
+              ⛶ Fullscreen
+            </button>
+
+            ${actionButtonHtml}
+          </div>
+        </div>
+
+        ${!isLocal && embedUrl ? `
+          <div class="video-embed" style="margin-bottom:0;">
+            <iframe src="${escapeAttr(embedUrl)}" title="${escapeAttr(p.title)}" allowfullscreen></iframe>
+          </div>
+        ` : `
+          <!-- Slide Main Stage Canvas -->
+          <div class="ppt-stage">
+            <div>
+              ${isTeacherPreview && course && course.videos && course.videos.length > 0 ? `
+                <div style="background:rgba(30,43,34,0.05); border:1px dashed var(--line); border-radius:var(--radius); padding:8px 12px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                  <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <span style="font-size:11.5px; font-weight:700; color:var(--gold-deep);">🎬 Linked Video for Slide ${currentIdx + 1}:</span>
+                    <select class="input" style="padding:3px 8px; font-size:11.5px; width:auto; background:#fff;" data-assign-slide-video="${p.id}|${currentIdx}">
+                      <option value="">— Inherit Previous Video —</option>
+                      ${course.videos.map(v=>`
+                        <option value="${v.id}" ${(activeSlide.videoId || activeSlide.video_id) === v.id ? 'selected' : ''}>🎬 ${escapeHtml(v.title)}</option>
+                      `).join('')}
+                    </select>
+                  </div>
+                  <button class="btn btn-gold btn-sm" style="padding:3px 10px; font-size:11px;" data-save-single-slide-map="${course.id}|${p.id}|${currentIdx}">💾 Save Link</button>
+                </div>
+              ` : ''}
+
+              <div class="ppt-slide-title">${escapeHtml(activeSlide.title || `Slide ${currentIdx + 1}`)}</div>
+
+              <div class="ppt-slide-content">
+                ${textBlocks.map(tb=>{
+                  const lvl = tb.level || 0;
+                  const marker = lvl === 0 ? '•' : (lvl === 1 ? '➔' : '–');
+                  const isBold = tb.is_bold || tb.isBold;
+                  return `
+                    <div class="ppt-bullet ppt-bullet-lvl-${lvl}">
+                      <span class="ppt-bullet-marker">${marker}</span>
+                      <span style="${isBold ? 'font-weight:700;' : ''}">${escapeHtml(tb.text)}</span>
+                    </div>
+                  `;
+                }).join('')}
+
+                ${tables.map(tbl=>`
+                  <div style="overflow-x:auto; margin:12px 0; border:1px solid var(--line); border-radius:var(--radius); background:#fff;">
+                    <table class="ledger" style="margin:0;">
+                      ${tbl.headers && tbl.headers.length ? `
+                        <thead>
+                          <tr>${tbl.headers.map(h=>`<th>${escapeHtml(h)}</th>`).join('')}</tr>
+                        </thead>
+                      ` : ''}
+                      <tbody>
+                        ${(tbl.rows||[]).map(r=>`
+                          <tr>${r.map(c=>`<td>${escapeHtml(c)}</td>`).join('')}</tr>
+                        `).join('')}
+                      </tbody>
+                    </table>
+                  </div>
+                `).join('')}
+
+                ${images.length > 0 ? `
+                  <div class="ppt-images-grid">
+                    ${images.map(img=>`
+                      <img src="${(API_BASE||'') + img.url}" alt="${escapeAttr(img.filename||'Slide Graphic')}" class="ppt-slide-img" loading="lazy">
+                    `).join('')}
+                  </div>
+                ` : ''}
+              </div>
+            </div>
+
+            <!-- Collapsible Speaker Notes Drawer -->
+            ${(notes && isNotesOpen) ? `
+              <div class="ppt-notes-panel">
+                <div class="ppt-notes-badge">📝 Speaker Notes / Teacher Insights</div>
+                <div>${escapeHtml(notes)}</div>
+              </div>
+            ` : ''}
+          </div>
+
+          <!-- Slide Footer Navigation Bar -->
+          <div class="ppt-footer-bar">
+            <div style="display:flex; gap:8px; align-items:center;">
+              <button class="btn btn-ghost btn-sm" data-pres-prev="${p.id}" ${currentIdx === 0 ? 'disabled' : ''}>
+                ◀ Previous
+              </button>
+              <span class="small-muted" style="font-family:var(--mono);">Slide ${currentIdx + 1} of ${slides.length || 1}</span>
+              <button class="btn btn-gold btn-sm" data-pres-next="${p.id}" ${currentIdx >= slides.length - 1 ? 'disabled' : ''}>
+                Next Slide ▶
+              </button>
+            </div>
+
+            <div style="display:flex; align-items:center; gap:8px;">
+              ${slides.length > 1 ? `
+                <span class="small-muted" style="font-size:11px;">Jump to:</span>
+                <select class="input" style="padding:3px 8px; font-size:11.5px; background:#fff; width:auto;" data-pres-jump="${p.id}">
+                  ${slides.map((s, i)=>`
+                    <option value="${i}" ${i === currentIdx ? 'selected' : ''}>Slide ${i+1}: ${escapeHtml((s.title||'').slice(0, 30))}</option>
+                  `).join('')}
+                </select>
+              ` : ''}
+            </div>
+          </div>
+        `}
+      </div>
+
+      <!-- BOTTOM: Single Synchronized Video Player -->
+      ${linkInfo && linkInfo.video ? `
+        <div class="synced-video-box" id="synced-video-wrap-${p.id}" style="background:var(--paper-hi); border:1.5px solid var(--gold); border-radius:var(--radius); padding:14px; box-shadow:var(--shadow);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+              <span style="font-weight:700; font-size:14px; color:var(--ink);">🎬 ${escapeHtml(linkInfo.video.title)}</span>
+              ${linkInfo.isDirect 
+                ? `<span class="stamp teal" style="font-size:9.5px; padding:2px 8px;">🎬 Directly linked to Slide ${currentIdx + 1}</span>` 
+                : (linkInfo.sourceSlideIndex !== null 
+                    ? `<span class="stamp ink" style="font-size:9.5px; padding:2px 8px;">Relevant video from Slide ${linkInfo.sourceSlideIndex + 1}</span>`
+                    : `<span class="stamp gold" style="font-size:9.5px; padding:2px 8px;">Course Lesson Video</span>`)}
+            </div>
+            ${linkInfo.start > 0 ? `<span class="small-muted" style="font-family:var(--mono); font-size:11.5px;">⏱ Starts at ${formatTimestamp(linkInfo.start)}</span>` : ''}
+          </div>
+          ${renderVideoPlayer(linkInfo.video, isTeacherPreview, linkInfo.start, linkInfo.end)}
+        </div>
+      ` : `
+        <div class="empty-state" style="padding:14px; margin-top:8px;">
+          <span class="small-muted">No video is associated with this lesson yet.</span>
+        </div>
+      `}
+    </div>
+  `;
+}
+
+function renderFullscreenModal(){
+  const presId = state.fullscreenPresentationId;
+  if(!presId) return '';
+  let foundPres = null;
+  let foundCourse = null;
+  for(const c of state.db.courses || []){
+    const p = (c.presentations||[]).find(x=>x.id === presId);
+    if(p){ foundPres = p; foundCourse = c; break; }
+  }
+  if(!foundPres) return '';
+
+  const slides = foundPres.slides || [];
+  const currentIdx = Math.min(state.activePresentationSlide[presId] || 0, Math.max(0, slides.length - 1));
+  const activeSlide = slides[currentIdx] || { title: foundPres.title, text_blocks: [], tables: [], images: [], notes: '' };
+  const textBlocks = activeSlide.textBlocks || activeSlide.text_blocks || [];
+  const tables = activeSlide.tables || [];
+  const images = activeSlide.images || [];
+  const notes = activeSlide.notes || '';
+
+  const linkInfo = getLinkedVideoForSlide(foundCourse, foundPres, currentIdx);
+
+  return `
+    <div class="ppt-fullscreen-overlay">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; color:#fff;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <span class="stamp gold" style="font-size:12px; padding:3px 10px;">Slide ${currentIdx + 1} of ${slides.length || 1}</span>
+          <span style="font-family:var(--serif); font-size:18px; font-weight:700;">${escapeHtml(foundPres.title)}</span>
+          ${linkInfo && linkInfo.video ? `<span class="stamp teal" style="font-size:11px;">🎬 Video: ${escapeHtml(linkInfo.video.title)}</span>` : ''}
+        </div>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <span class="small-muted" style="color:rgba(255,255,255,0.7); font-size:12px;">Use ← / → keys to navigate</span>
+          <button class="btn btn-rose btn-sm" id="btn-close-fullscreen" style="font-size:12px; padding:6px 14px;">✕ Exit Fullscreen (Esc)</button>
+        </div>
+      </div>
+
+      <div class="ppt-fullscreen-stage">
+        <div>
+          <div class="ppt-slide-title" style="font-size:28px; margin-bottom:20px;">${escapeHtml(activeSlide.title || `Slide ${currentIdx + 1}`)}</div>
+
+          <div class="ppt-slide-content" style="gap:16px;">
+            ${textBlocks.map(tb=>{
+              const lvl = tb.level || 0;
+              const marker = lvl === 0 ? '•' : (lvl === 1 ? '➔' : '–');
+              const isBold = tb.is_bold || tb.isBold;
+              return `
+                <div class="ppt-bullet ppt-bullet-lvl-${lvl}" style="font-size:17px; line-height:1.6;">
+                  <span class="ppt-bullet-marker" style="font-size:14px;">${marker}</span>
+                  <span style="${isBold ? 'font-weight:700;' : ''}">${escapeHtml(tb.text)}</span>
+                </div>
+              `;
+            }).join('')}
+
+            ${tables.map(tbl=>`
+              <div style="overflow-x:auto; margin:16px 0; border:1px solid var(--line); border-radius:var(--radius); background:#fff;">
+                <table class="ledger" style="font-size:15px;">
+                  ${tbl.headers && tbl.headers.length ? `
+                    <thead><tr>${tbl.headers.map(h=>`<th style="font-size:12px; padding:10px 14px;">${escapeHtml(h)}</th>`).join('')}</tr></thead>
+                  ` : ''}
+                  <tbody>
+                    ${(tbl.rows||[]).map(r=>`
+                      <tr>${r.map(c=>`<td style="padding:12px 14px;">${escapeHtml(c)}</td>`).join('')}</tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            `).join('')}
+
+            ${images.length > 0 ? `
+              <div class="ppt-images-grid" style="gap:18px;">
+                ${images.map(img=>`
+                  <img src="${(API_BASE||'') + img.url}" alt="${escapeAttr(img.filename||'Slide Graphic')}" class="ppt-slide-img" style="max-height:300px;">
+                `).join('')}
+              </div>
+            ` : ''}
+          </div>
+        </div>
+
+        ${notes ? `
+          <div class="ppt-notes-panel" style="font-size:14px; margin-top:20px;">
+            <div class="ppt-notes-badge" style="font-size:12px;">📝 Speaker Notes</div>
+            <div>${escapeHtml(notes)}</div>
+          </div>
+        ` : ''}
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:14px;">
+        <button class="btn btn-ghost btn-sm" style="color:#fff; border-color:rgba(255,255,255,0.4);" data-pres-prev="${presId}" ${currentIdx === 0 ? 'disabled' : ''}>
+          ◀ Previous Slide
+        </button>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <span style="color:rgba(255,255,255,0.8); font-family:var(--mono); font-size:13px;">${currentIdx + 1} / ${slides.length || 1}</span>
+          ${linkInfo && linkInfo.video ? `
+            <button class="btn btn-gold btn-sm" data-play-linked-video="${presId}">
+              ▶ Play Linked Video
+            </button>
+          ` : ''}
+        </div>
+        <button class="btn btn-gold btn-sm" data-pres-next="${presId}" ${currentIdx >= slides.length - 1 ? 'disabled' : ''}>
+          Next Slide ▶
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function courseManageCard(c){
+  const open = state.openDetails.has('t-'+c.id);
+  const isEditing = Boolean(state.editingCourses && state.editingCourses[c.id]);
+  const qDraft = draft.quizBuilders[c.id] || [];
+  const videos = c.videos || [];
+  const presentations = c.presentations || [];
+  const quizzes = c.quizzes || [];
+  const enrolled = c.enrolled || [];
+  const pending = c.pending || [];
+  const activeVideoTab = (state.videoTabs && state.videoTabs[c.id]) || 'upload';
+  const activePresTab = (state.presentationTabs && state.presentationTabs[c.id]) || 'upload';
+
+  return `
+  <details class="expander" data-course="${c.id}" ${open?'open':''}>
+    <summary>
+      <div style="flex:1; margin-right:12px;">
+        <div class="card-title" style="margin-bottom:2px;">${escapeHtml(c.title)}</div>
+        <div class="small-muted">${escapeHtml(c.description||'')}</div>
+        <div class="meta-row">
+          <span>${videos.length} video${videos.length!==1?'s':''}</span>
+          <span>${presentations.length} presentation${presentations.length!==1?'s':''}</span>
+          <span>${quizzes.length} quiz${quizzes.length!==1?'zes':''}</span>
+          <span>${enrolled.length} enrolled</span>
+          <span>${pending.length} pending</span>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <button class="btn btn-ghost btn-sm" data-toggle-edit-course="${c.id}" title="Edit course name and description" type="button" style="padding:4px 10px; font-size:12px;">✏️ Edit</button>
+        <span class="chevron">${open?'▲':'▼'}</span>
+      </div>
+    </summary>
+    <div class="expander-body">
+
+      <!-- Course Details & Edit Header -->
+      <div style="background:rgba(255,255,255,0.5); border:1px solid var(--line); border-radius:var(--radius); padding:14px 16px; margin-bottom:18px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:${isEditing ? '12px' : '0'};">
+          <div style="font-family:var(--mono); font-size:11px; letter-spacing:1.5px; text-transform:uppercase; color:var(--ink-70); font-weight:700; display:flex; align-items:center; gap:6px;">
+            📖 Course Details
+          </div>
+          <button class="btn ${isEditing ? 'btn-ghost' : 'btn-gold'} btn-sm" data-toggle-edit-course="${c.id}" type="button" style="padding:4px 12px; font-size:12px;">
+            ${isEditing ? '✕ Cancel' : '✏️ Edit Course Name'}
+          </button>
+        </div>
+        ${isEditing ? `
+          <div style="margin-top:10px;">
+            <div class="field">
+              <label for="edit-course-title-${c.id}">Course Name / Title *</label>
+              <input class="input" id="edit-course-title-${c.id}" value="${escapeAttr(c.title)}" style="background:#fff; font-weight:600;" placeholder="e.g. Algebra I">
+            </div>
+            <div class="field">
+              <label for="edit-course-desc-${c.id}">Course Description</label>
+              <textarea class="textarea" id="edit-course-desc-${c.id}" style="background:#fff;" placeholder="What will students learn in this course?">${escapeHtml(c.description||'')}</textarea>
+            </div>
+            <div class="btn-row" style="margin-top:12px;">
+              <button class="btn btn-gold btn-sm" data-save-course="${c.id}">💾 Save Changes</button>
+              <button class="btn btn-ghost btn-sm" data-cancel-edit-course="${c.id}">Cancel</button>
+            </div>
+          </div>
+        ` : `
+          <div style="margin-top:8px;">
+            <div style="font-family:var(--serif); font-size:17px; font-weight:700; color:var(--ink);">${escapeHtml(c.title)}</div>
+            <div style="color:var(--ink-70); font-size:13px; margin-top:2px; line-height:1.4;">${escapeHtml(c.description || 'No description provided.')}</div>
+          </div>
+        `}
+      </div>
+
+      <!-- Course Videos Section -->
+      <div class="subsection-title">Videos (${videos.length})</div>
+      ${videos.map(v=>{
+        const isLocal = (v.videoType === 'local' || v.video_type === 'local' || !v.youtubeId);
+        const chunks = v.chunks || [];
+        const badge = isLocal
+          ? `<span class="stamp teal" style="font-size:9.5px; padding:2px 7px; margin-left:6px;">Local File${v.fileSize ? ` · ${formatBytes(v.fileSize)}` : ''}</span>`
+          : `<span class="stamp gold" style="font-size:9.5px; padding:2px 7px; margin-left:6px;">YouTube</span>`;
+        const chunkBadge = chunks.length > 0
+          ? `<span class="stamp ink" style="font-size:9.5px; padding:2px 7px; margin-left:4px;">✂️ ${chunks.length} Segments</span>`
+          : '';
+        const isPreviewOpen = state.openDetails.has('prev-'+v.id);
+        const chunkSummary = chunks.length > 0
+          ? `${chunks.length} segments: ${chunks.map(k=> (k.startFormatted||formatTimestamp(k.start)) + '–' + (k.endFormatted||formatTimestamp(k.end))).join(', ')}`
+          : (isLocal ? (escapeHtml(v.fileName || 'Local file on server')) : (escapeHtml(v.youtubeId || v.youtube_id || '')));
+
+        return `
+          <div style="border:1px solid var(--line); border-radius:var(--radius); margin-bottom:12px; background:rgba(255,255,255,0.4); overflow:hidden;">
+            <div class="list-item" style="border:none; margin-bottom:0; background:transparent;">
+              <div>
+                <div class="li-title" style="display:flex; align-items:center; flex-wrap:wrap; gap:4px;">
+                  ${escapeHtml(v.title)} ${badge} ${chunkBadge}
+                </div>
+                <div class="li-sub">${escapeHtml(chunkSummary)}</div>
+              </div>
+              <div class="btn-row" style="align-items:center;">
+                <button class="btn btn-ghost btn-sm" data-toggle-preview="${v.id}">${isPreviewOpen ? 'Hide preview' : 'Preview'}</button>
+                <button class="btn btn-rose btn-sm" data-remove-video="${c.id}|${v.id}">Remove</button>
+              </div>
+            </div>
+            ${isPreviewOpen ? `
+              <div style="padding:14px; border-top:1px dashed var(--line); background:rgba(0,0,0,0.02);">
+                ${renderVideoPlayer(v, true)}
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('') || `<div class="small-muted" style="margin-bottom:10px;">No videos added yet.</div>`}
+
+      <div style="background:rgba(255,255,255,0.5); border:1px solid var(--line); border-radius:var(--radius); padding:14px; margin-top:10px; margin-bottom:16px;">
+        <div style="display:flex; gap:6px; margin-bottom:12px; border-bottom:1px solid var(--line); padding-bottom:8px;">
+          <button class="tab ${activeVideoTab==='upload' ? 'active' : ''}" style="padding:4px 10px; font-size:12px;" data-video-tab="${c.id}|upload">📁 Upload Local Video (Offline / Localhost)</button>
+          <button class="tab ${activeVideoTab==='youtube' ? 'active' : ''}" style="padding:4px 10px; font-size:12px;" data-video-tab="${c.id}|youtube">🔗 YouTube / Online Link</button>
+        </div>
+
+        ${activeVideoTab==='upload' ? `
+          <div class="field">
+            <label for="video-file-${c.id}">Select Local Video File (MP4, WebM, MOV, MKV, OGG):</label>
+            <input type="file" id="video-file-${c.id}" class="input" accept="video/mp4,video/webm,video/ogg,video/quicktime,video/x-matroska,video/*" style="background:#fff;">
+          </div>
+          <div class="field">
+            <label for="video-upload-title-${c.id}">Video Title (Optional, defaults to file name):</label>
+            <input class="input" id="video-upload-title-${c.id}" placeholder="e.g. Lecture 1: Getting Started" style="background:#fff;">
+          </div>
+          ${chunkBuilderBlock(c.id, false)}
+          <div style="margin-top:12px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+            <button class="btn btn-gold btn-sm" data-upload-video="${c.id}" id="btn-upload-${c.id}">⬆ Upload Video File</button>
+            <span id="upload-status-${c.id}" class="small-muted"></span>
+          </div>
+        ` : `
+          <div class="grid-2">
+            <div class="field" style="margin-bottom:0;">
+              <label for="video-yt-title-${c.id}">Video Title:</label>
+              <input class="input" id="video-yt-title-${c.id}" placeholder="e.g. Introduction Lecture" style="background:#fff;">
+            </div>
+            <div class="field" style="margin-bottom:0;">
+              <label for="video-yt-url-${c.id}">YouTube URL or Video ID:</label>
+              <input class="input" id="video-yt-url-${c.id}" placeholder="https://www.youtube.com/watch?v=..." style="background:#fff;">
+            </div>
+          </div>
+          ${chunkBuilderBlock(c.id, true)}
+          <div style="margin-top:12px;">
+            <button class="btn btn-ghost btn-sm" data-add-yt-video="${c.id}">+ Add YouTube Video</button>
+          </div>
+        `}
+      </div>
+
+      <!-- Course Presentations Section -->
+      <div class="subsection-title">Presentations / Slide Decks (${presentations.length})</div>
+      ${presentations.map(p=>{
+        const isLocal = (p.presentationType === 'local' || p.presentation_type === 'local');
+        const badge = isLocal
+          ? `<span class="stamp gold" style="font-size:9.5px; padding:2px 7px; margin-left:6px;">Local PPTX · ${p.slideCount || p.slide_count || 1} slides${p.fileSize ? ` · ${formatBytes(p.fileSize)}` : ''}</span>`
+          : `<span class="stamp teal" style="font-size:9.5px; padding:2px 7px; margin-left:6px;">Online Deck</span>`;
+        const isPreviewOpen = state.openDetails.has('prev-pres-'+p.id);
+        const isMapperOpen = state.openDetails.has('mapper-pres-'+p.id);
+        const presSummary = isLocal ? (p.fileName || 'PowerPoint Presentation (.pptx)') : (p.embedUrl || p.embed_url || '');
+        const pSlides = p.slides || [];
+
+        return `
+          <div style="border:1px solid var(--line); border-radius:var(--radius); margin-bottom:12px; background:rgba(255,255,255,0.4); overflow:hidden;">
+            <div class="list-item" style="border:none; margin-bottom:0; background:transparent;">
+              <div>
+                <div class="li-title" style="display:flex; align-items:center; flex-wrap:wrap; gap:4px;">
+                  ${escapeHtml(p.title)} ${badge}
+                </div>
+                <div class="li-sub">${escapeHtml(presSummary)}</div>
+              </div>
+              <div class="btn-row" style="align-items:center;">
+                <button class="btn btn-ghost btn-sm" data-toggle-pres-preview="${p.id}">${isPreviewOpen ? 'Hide preview' : 'Preview'}</button>
+                <button class="btn ${isMapperOpen ? 'btn-gold' : 'btn-ghost'} btn-sm" data-toggle-slide-mapper="${p.id}">
+                  ${isMapperOpen ? '✕ Close Linker' : '🔗 Link Slides to Videos'}
+                </button>
+                ${isLocal ? `<a href="${API_BASE}/api/presentations/${p.id}/download" class="btn btn-ghost btn-sm" style="text-decoration:none;" download>⬇ Download</a>` : ''}
+                <button class="btn btn-rose btn-sm" data-remove-pres="${c.id}|${p.id}">Remove</button>
+              </div>
+            </div>
+
+            <!-- Slide-to-Video Integration Drawer -->
+            ${isMapperOpen ? `
+              <div style="padding:16px; border-top:1.5px solid var(--gold); background:rgba(201,154,62,0.06);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+                  <div>
+                    <div style="font-weight:700; font-size:13.5px; color:var(--ink);">🔗 Slide-to-Video Integration Manager</div>
+                    <div class="small-muted">Assign an uploaded course video to each slide. If a slide has no direct link, it automatically displays the previous relevant video.</div>
+                  </div>
+                  <button class="btn btn-gold btn-sm" data-save-slide-mapper="${c.id}|${p.id}">💾 Save All Slide Links</button>
+                </div>
+
+                ${pSlides.length === 0 ? `<div class="small-muted">No slides found in this presentation.</div>` : `
+                  <div style="overflow-x:auto; background:#fff; border:1px solid var(--line); border-radius:var(--radius); margin-bottom:10px;">
+                    <table class="ledger" style="margin:0; font-size:12px;">
+                      <thead>
+                        <tr>
+                          <th style="width:65px;">Slide #</th>
+                          <th>Slide Title</th>
+                          <th style="width:260px;">Linked Course Video</th>
+                          <th style="width:120px;">Start Time</th>
+                          <th style="width:120px;">End Time</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${pSlides.map((sl, sli)=>{
+                          const sVid = sl.videoId || sl.video_id || '';
+                          const sStart = sl.videoStart || sl.video_start || '';
+                          const sEnd = sl.videoEnd || sl.video_end || '';
+                          return `
+                            <tr>
+                              <td style="font-weight:700; font-family:var(--mono); color:var(--ink-70);">#${sli + 1}</td>
+                              <td><span style="font-weight:600;">${escapeHtml(sl.title || 'Slide ' + (sli+1))}</span></td>
+                              <td>
+                                <select class="input" style="padding:4px 8px; font-size:11.5px; background:#fff; width:100%;" data-mapper-vid="${p.id}|${sli}">
+                                  <option value="">— Inherit Previous Video —</option>
+                                  ${videos.map(v=>`
+                                    <option value="${v.id}" ${sVid === v.id ? 'selected' : ''}>🎬 ${escapeHtml(v.title)} (${(v.videoType||v.video_type)==='local'?'Local':'YouTube'})</option>
+                                  `).join('')}
+                                </select>
+                              </td>
+                              <td>
+                                <input class="input" style="padding:4px 8px; font-size:11.5px; font-family:var(--mono);" placeholder="00:00" value="${escapeAttr(sStart ? formatTimestamp(sStart) : '')}" data-mapper-start="${p.id}|${sli}">
+                              </td>
+                              <td>
+                                <input class="input" style="padding:4px 8px; font-size:11.5px; font-family:var(--mono);" placeholder="Optional" value="${escapeAttr(sEnd ? formatTimestamp(sEnd) : '')}" data-mapper-end="${p.id}|${sli}">
+                              </td>
+                            </tr>
+                          `;
+                        }).join('')}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div style="display:flex; justify-content:flex-end;">
+                    <button class="btn btn-gold btn-sm" data-save-slide-mapper="${c.id}|${p.id}">💾 Save All Slide Links</button>
+                  </div>
+                `}
+              </div>
+            ` : ''}
+
+            ${isPreviewOpen ? `
+              <div style="padding:14px; border-top:1px dashed var(--line); background:rgba(0,0,0,0.02);">
+                ${renderPresentationViewer(p, true, c)}
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('') || `<div class="small-muted" style="margin-bottom:10px;">No presentations added yet.</div>`}
+
+      <div style="background:rgba(255,255,255,0.5); border:1px solid var(--line); border-radius:var(--radius); padding:14px; margin-top:10px; margin-bottom:16px;">
+        <div style="display:flex; gap:6px; margin-bottom:12px; border-bottom:1px solid var(--line); padding-bottom:8px;">
+          <button class="tab ${activePresTab==='upload' ? 'active' : ''}" style="padding:4px 10px; font-size:12px;" data-pres-tab="${c.id}|upload">📁 Upload PowerPoint (.pptx / .ppt)</button>
+          <button class="tab ${activePresTab==='embed' ? 'active' : ''}" style="padding:4px 10px; font-size:12px;" data-pres-tab="${c.id}|embed">🔗 Online Slides (Google Slides / OneDrive / Canva)</button>
+        </div>
+
+        ${activePresTab==='upload' ? `
+          <div class="field">
+            <label for="pres-file-${c.id}">Select PowerPoint Presentation File (.pptx, .ppt):</label>
+            <input type="file" id="pres-file-${c.id}" class="input" accept=".pptx,.ppt,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.ms-powerpoint" style="background:#fff;">
+          </div>
+          <div class="grid-2">
+            <div class="field">
+              <label for="pres-upload-title-${c.id}">Presentation Title (Optional, defaults to file name):</label>
+              <input class="input" id="pres-upload-title-${c.id}" placeholder="e.g. Chapter 1: Introduction Slides" style="background:#fff;">
+            </div>
+            <div class="field">
+              <label for="pres-upload-desc-${c.id}">Short Description (Optional):</label>
+              <input class="input" id="pres-upload-desc-${c.id}" placeholder="e.g. Slides covering lecture concepts" style="background:#fff;">
+            </div>
+          </div>
+          <div style="margin-top:10px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+            <button class="btn btn-gold btn-sm" data-upload-pres="${c.id}" id="btn-upload-pres-${c.id}">⬆ Upload Presentation</button>
+            <span id="pres-upload-status-${c.id}" class="small-muted"></span>
+          </div>
+        ` : `
+          <div class="grid-2">
+            <div class="field">
+              <label for="pres-embed-title-${c.id}">Presentation Title:</label>
+              <input class="input" id="pres-embed-title-${c.id}" placeholder="e.g. Google Slides Deck" style="background:#fff;">
+            </div>
+            <div class="field">
+              <label for="pres-embed-url-${c.id}">Google Slides / OneDrive / Canva Embed URL or Link:</label>
+              <input class="input" id="pres-embed-url-${c.id}" placeholder="https://docs.google.com/presentation/d/.../edit" style="background:#fff;">
+            </div>
+          </div>
+          <div class="field" style="margin-top:-4px;">
+            <label for="pres-embed-desc-${c.id}">Short Description (Optional):</label>
+            <input class="input" id="pres-embed-desc-${c.id}" placeholder="e.g. Interactive slide deck with web animations" style="background:#fff;">
+          </div>
+          <div style="margin-top:10px;">
+            <button class="btn btn-ghost btn-sm" data-add-embed-pres="${c.id}">+ Add Online Slides</button>
+          </div>
+        `}
+      </div>
+
+      <!-- Quizzes Section -->
+      <div class="subsection-title">Quizzes (${quizzes.length})</div>
+      ${quizzes.map(q=>`
+        <div class="list-item">
+          <div><div class="li-title">${escapeHtml(q.title)}</div><div class="li-sub">${(q.questions||[]).length} question${(q.questions||[]).length!==1?'s':''}</div></div>
+          <button class="btn btn-rose btn-sm" data-remove-quiz="${c.id}|${q.id}">Remove</button>
+        </div>`).join('') || `<div class="small-muted" style="margin-bottom:10px;">No quizzes added yet.</div>`}
+
+      <div class="hairline"></div>
+      <div class="small-muted" style="margin-bottom:10px;">Build a new quiz</div>
+      <input class="input" id="quiz-title-${c.id}" placeholder="Quiz title" style="margin-bottom:12px;">
+      <div id="quiz-questions-${c.id}">
+        ${qDraft.map((q,qi)=>questionBuilderBlock(c.id,qi,q)).join('')}
+      </div>
+      <div class="btn-row" style="margin-top:6px;">
+        <button class="btn btn-ghost btn-sm" data-add-question="${c.id}">+ Add question</button>
+        ${qDraft.length>0 ? `<button class="btn btn-gold btn-sm" data-save-quiz="${c.id}">Save quiz</button>` : ''}
+      </div>
+
+      <div class="hairline"></div>
+      <div class="btn-row" style="justify-content:space-between; align-items:center;">
+        <button class="btn btn-ghost btn-sm" data-toggle-edit-course="${c.id}" type="button">✏️ Edit course name & details</button>
+        <button class="btn btn-rose btn-sm" data-delete-course="${c.id}">Delete this course</button>
+      </div>
+    </div>
+  </details>`;
+}
+
+
+function questionBuilderBlock(courseId, qi, q){
+  return `
+    <div class="card" style="background:rgba(255,255,255,0.5); padding:14px 16px; margin-bottom:10px;">
+      <div class="field" style="margin-bottom:8px;">
+        <input class="input" placeholder="Question ${qi+1}" value="${escapeAttr(q.text)}" data-qtext="${courseId}|${qi}">
+      </div>
+      ${q.options.map((opt,oi)=>`
+        <div class="opt-row">
+          <input type="radio" name="correct-${courseId}-${qi}" ${q.correct===oi?'checked':''} data-qcorrect="${courseId}|${qi}|${oi}">
+          <input class="input" placeholder="Option ${oi+1}" value="${escapeAttr(opt)}" data-qopt="${courseId}|${qi}|${oi}">
+        </div>`).join('')}
+      <button class="link-btn" data-remove-question="${courseId}|${qi}">Remove question</button>
+    </div>`;
+}
+
+function teacherStudentsTab(){
+  const courses = state.db.courses;
+  if(courses.length===0) return `<div class="empty-state">Add a course first — then you can approve students and manage the roster here.</div>`;
+  return courses.map(c=>{
+    const pending = c.pending || [];
+    const enrolled = c.enrolled || [];
+    return `
+    <div class="card">
+      <div class="card-title">${escapeHtml(c.title)}</div>
+      <div class="subsection-title">Pending requests (${pending.length})</div>
+      ${pending.length===0 ? `<div class="small-muted" style="margin-bottom:8px;">No pending requests.</div>` :
+        pending.map(sid=>`
+        <div class="list-item">
+          <span class="li-title">${escapeHtml(userName(sid))}</span>
+          <div class="btn-row">
+            <button class="btn btn-gold btn-sm" data-approve="${c.id}|${sid}">Approve</button>
+            <button class="btn btn-rose btn-sm" data-reject="${c.id}|${sid}">Decline</button>
+          </div>
+        </div>`).join('')}
+      <div class="subsection-title">Enrolled (${enrolled.length})</div>
+      ${enrolled.length===0 ? `<div class="small-muted">No students enrolled yet.</div>` :
+        enrolled.map(sid=>`
+        <div class="list-item">
+          <span class="li-title">${escapeHtml(userName(sid))}</span>
+          <button class="btn btn-ghost btn-sm" data-remove-student="${c.id}|${sid}">Remove</button>
+        </div>`).join('')}
+    </div>`;
+  }).join('');
+}
+
+function teacherResultsTab(){
+  const courses = state.db.courses;
+  if(courses.length===0) return `<div class="empty-state">No courses yet — results will show up here once students start taking quizzes.</div>`;
+  return courses.map(c=>{
+    const attemptsByStudent = {};
+    (state.db.results||[]).filter(r=>(r.courseId===c.id || r.course_id===c.id)).forEach(r=>{
+      const sid = r.studentId || r.student_id;
+      (attemptsByStudent[sid] = attemptsByStudent[sid]||[]).push(r);
+    });
+    const studentIds = c.enrolled || [];
+    return `
+    <div class="card">
+      <div class="card-title">${escapeHtml(c.title)}</div>
+      ${studentIds.length===0 ? `<div class="small-muted">No enrolled students yet.</div>` : `
+      <table class="ledger">
+        <thead><tr><th>Student</th><th>Attempts</th><th>Avg %</th><th>Last %</th><th>Trend</th></tr></thead>
+        <tbody>
+        ${studentIds.map(sid=>{
+          const attempts = (attemptsByStudent[sid]||[]).sort((a,b)=> (a.timestamp||new Date(a.submitted_at||a.submittedAt).getTime()) - (b.timestamp||new Date(b.submitted_at||b.submittedAt).getTime()));
+          const avg = attempts.length ? Math.round(attempts.reduce((s,a)=>s+a.percent,0)/attempts.length) : null;
+          const last = attempts.length ? attempts[attempts.length-1].percent : null;
+          return `<tr>
+            <td>${escapeHtml(userName(sid))}</td>
+            <td>${attempts.length}</td>
+            <td>${avg===null?'—':avg+'%'}</td>
+            <td>${last===null?'—':stampFor(last)}</td>
+            <td>${sparkline(attempts.map(a=>a.percent))}</td>
+          </tr>`;
+        }).join('')}
+        </tbody>
+      </table>`}
+    </div>`;
+  }).join('');
+}
+
+function stampFor(percent){
+  const cls = percent>=70 ? 'teal' : (percent>=40 ? 'gold' : 'rose');
+  return `<span class="stamp ${cls}">${percent}%</span>`;
+}
+
+function sparkline(points){
+  if(!points || points.length===0) return `<span class="small-muted">no data</span>`;
+  const w=90,h=24,pad=3;
+  const max=100,min=0;
+  const step = points.length>1 ? (w-2*pad)/(points.length-1) : 0;
+  const coords = points.map((p,i)=>{
+    const x = pad + i*step;
+    const y = h - pad - ((p-min)/(max-min))*(h-2*pad);
+    return [x,y];
+  });
+  const path = coords.map((c,i)=> (i===0?'M':'L')+c[0].toFixed(1)+','+c[1].toFixed(1)).join(' ');
+  const lastColor = points[points.length-1]>=70 ? 'var(--teal)' : (points[points.length-1]>=40 ? 'var(--gold-deep)' : 'var(--rose)');
+  return `<div class="spark-wrap"><svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+    <path d="${path}" fill="none" stroke="${lastColor}" stroke-width="1.6"/>
+    ${coords.map(c=>`<circle cx="${c[0].toFixed(1)}" cy="${c[1].toFixed(1)}" r="1.6" fill="${lastColor}"/>`).join('')}
+  </svg></div>`;
+}
+
+/* ================= STUDENT VIEW ================= */
+function studentView(){
+  const tabs = [['browse','Browse Courses'],['mycourses','My Courses'],['results','My Results']];
+  return `
+    <h1 class="page-title">Student desk</h1>
+    <p class="page-sub">Join courses, watch the lessons, and keep an eye on your scores.</p>
+    <div class="tabs">
+      ${tabs.map(([k,l])=>`<button class="tab ${state.studentTab===k?'active':''}" data-tab="${k}">${l}</button>`).join('')}
+    </div>
+    ${state.studentTab==='browse' ? studentBrowseTab() : ''}
+    ${state.studentTab==='mycourses' ? studentMyCoursesTab() : ''}
+    ${state.studentTab==='results' ? studentResultsTab() : ''}
+  `;
+}
+
+function enrollmentStatus(course){
+  const sid = state.identity.id;
+  const enrolled = course.enrolled || [];
+  const pending = course.pending || [];
+  if(enrolled.includes(sid)) return 'enrolled';
+  if(pending.includes(sid)) return 'pending';
+  return 'none';
+}
+
+function studentBrowseTab(){
+  const courses = state.db.courses;
+  if(courses.length===0) return `<div class="empty-state">No courses have been published yet. Check back soon.</div>`;
+  return courses.map(c=>{
+    const status = enrollmentStatus(c);
+    const videos = c.videos || [];
+    const presentations = c.presentations || [];
+    const quizzes = c.quizzes || [];
+    return `
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">${escapeHtml(c.title)}</div>
+          <p class="card-desc">${escapeHtml(c.description||'')}</p>
+          <div class="meta-row">
+            <span>${videos.length} video${videos.length!==1?'s':''}</span>
+            <span>${presentations.length} presentation${presentations.length!==1?'s':''}</span>
+            <span>${quizzes.length} quiz${quizzes.length!==1?'zes':''}</span>
+          </div>
+        </div>
+        <div>
+          ${status==='enrolled' ? `<span class="stamp teal">Enrolled</span>` :
+            status==='pending' ? `<span class="stamp gold">Pending</span>` :
+            `<button class="btn btn-gold btn-sm" data-request="${c.id}">Request to join</button>`}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function studentMyCoursesTab(){
+  const sid = state.identity.id;
+  const courses = state.db.courses.filter(c=> (c.enrolled||[]).includes(sid));
+  if(courses.length===0) return `<div class="empty-state">You're not enrolled in anything yet — head to "Browse Courses" to request one.</div>`;
+  return courses.map(c=>{
+    const open = state.openDetails.has('s-'+c.id);
+    const videos = c.videos || [];
+    const presentations = c.presentations || [];
+    const quizzes = c.quizzes || [];
+    const activePresId = (state.activeCoursePres && state.activeCoursePres[c.id]) || (presentations.length > 0 ? presentations[0].id : null);
+    const activePres = presentations.find(p => p.id === activePresId) || (presentations.length > 0 ? presentations[0] : null);
+
+    return `
+    <details class="expander" data-scourse="${c.id}" ${open?'open':''}>
+      <summary>
+        <div>
+          <div class="card-title" style="margin-bottom:2px;">${escapeHtml(c.title)}</div>
+          <div class="small-muted">${presentations.length} presentation${presentations.length!==1?'s':''} · ${videos.length} video${videos.length!==1?'s':''} · ${quizzes.length} quiz${quizzes.length!==1?'zes':''}</div>
+        </div>
+        <span class="chevron">${open?'▲':'▼'}</span>
+      </summary>
+      <div class="expander-body">
+        ${state.activeQuiz && state.activeQuiz.courseId===c.id ? quizTakingBlock(c) : `
+          <!-- Integrated Lesson: Presentation on Top, Synced Video on Bottom -->
+          <div class="subsection-title">Lesson Presentation & Video</div>
+          ${activePres ? `
+            ${presentations.length > 1 ? `
+              <div style="display:flex; gap:6px; margin-bottom:12px; overflow-x:auto;">
+                ${presentations.map(p=>`
+                  <button class="tab ${(activePres.id === p.id) ? 'active' : ''}" style="padding:4px 10px; font-size:12px;" data-select-course-pres="${c.id}|${p.id}">
+                    📑 ${escapeHtml(p.title)}
+                  </button>
+                `).join('')}
+              </div>
+            ` : ''}
+            ${renderPresentationViewer(activePres, false, c)}
+          ` : (videos.length > 0 ? `
+            <div style="background:var(--paper-hi); border:1.5px solid var(--gold); border-radius:var(--radius); padding:14px; margin-bottom:18px; box-shadow:var(--shadow);">
+              <div class="li-title" style="margin-bottom:10px; font-weight:600; display:flex; align-items:center; gap:8px;">
+                <span>🎬 ${escapeHtml(videos[0].title)}</span>
+                <span class="stamp gold" style="font-size:9.5px; padding:2px 8px;">Course Video</span>
+              </div>
+              ${renderVideoPlayer(videos[0], false)}
+            </div>
+          ` : `<div class="small-muted" style="margin-bottom:14px;">No lesson presentations or videos published yet.</div>`)}
+
+          <!-- Course Quizzes -->
+          <div class="subsection-title">Quizzes (${quizzes.length})</div>
+          ${quizzes.length===0 ? `<div class="small-muted">No quizzes yet.</div>` :
+            quizzes.map(q=>{
+              const myAttempts = (state.db.results||[]).filter(r=>(r.studentId===sid || r.student_id===sid) && (r.quizId===q.id || r.quiz_id===q.id));
+              const last = myAttempts.length ? myAttempts[myAttempts.length-1] : null;
+              return `
+              <div class="list-item">
+                <div><div class="li-title">${escapeHtml(q.title)}</div><div class="li-sub">${(q.questions||[]).length} question${(q.questions||[]).length!==1?'s':''} · ${myAttempts.length} attempt${myAttempts.length!==1?'s':''}</div></div>
+                <div class="btn-row" style="align-items:center;">
+                  ${last ? stampFor(last.percent) : ''}
+                  <button class="btn btn-gold btn-sm" data-take-quiz="${c.id}|${q.id}">${myAttempts.length?'Retake':'Take quiz'}</button>
+                </div>
+              </div>`;
+            }).join('')}
+        `}
+      </div>
+    </details>`;
+  }).join('');
+}
+
+function quizTakingBlock(course){
+  const quiz = findQuiz(course, state.activeQuiz.quizId);
+  if(!quiz) return `<div class="empty-state">Quiz not found.</div>`;
+  const answers = draft.quizAnswers[quiz.id] || {};
+  return `
+    <div class="subsection-title">${escapeHtml(quiz.title)}</div>
+    ${(quiz.questions||[]).map((q,qi)=>`
+      <div class="q-block">
+        <div class="q-text">${qi+1}. ${escapeHtml(q.text)}</div>
+        ${(q.options||[]).map((opt,oi)=>`
+          <div class="opt-row" style="margin-bottom:4px;">
+            <input type="radio" name="take-${q.id}" ${answers[q.id]===oi?'checked':''} data-take-answer="${quiz.id}|${q.id}|${oi}">
+            <label style="font-size:13.5px;">${escapeHtml(opt)}</label>
+          </div>`).join('')}
+      </div>
+    `).join('')}
+    <div class="btn-row">
+      <button class="btn btn-gold" data-submit-quiz="${course.id}|${quiz.id}">Submit answers</button>
+      <button class="btn btn-ghost" data-cancel-quiz="1">Cancel</button>
+    </div>
+  `;
+}
+
+function studentResultsTab(){
+  const sid = state.identity.id;
+  const results = (state.db.results||[]).filter(r=>(r.studentId===sid || r.student_id===sid)).sort((a,b)=>(b.timestamp||new Date(b.submitted_at||b.submittedAt).getTime()) - (a.timestamp||new Date(a.submitted_at||a.submittedAt).getTime()));
+  if(results.length===0) return `<div class="empty-state">No quiz attempts yet. Take a quiz from "My Courses" and your scores will show up here.</div>`;
+
+  const byCourse = {};
+  results.forEach(r=>{
+    const cid = r.courseId || r.course_id;
+    (byCourse[cid]=byCourse[cid]||[]).push(r);
+  });
+
+  return Object.entries(byCourse).map(([courseId, list])=>{
+    const course = findCourse(courseId);
+    const trend = list.slice().reverse().map(r=>r.percent);
+    return `
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">${course?escapeHtml(course.title):'Course'}</div>
+        ${sparkline(trend)}
+      </div>
+      <table class="ledger">
+        <thead><tr><th>Quiz</th><th>Score</th><th>Date</th></tr></thead>
+        <tbody>
+          ${list.map(r=>{
+            const dateStr = new Date(r.timestamp || r.submitted_at || r.submittedAt).toLocaleString();
+            return `<tr><td>${escapeHtml(r.quizTitle || r.quiz_title)}</td><td>${stampFor(r.percent)} <span class="small-muted">(${r.score}/${r.total})</span></td><td class="small-muted">${dateStr}</td></tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`;
+  }).join('');
+}
+
+/* ================= EVENT BINDING ================= */
+function bindTabButtons(prop){
+  document.querySelectorAll('.tab').forEach(btn=>{
+    btn.onclick = ()=>{ state[prop] = btn.dataset.tab; render(); };
+  });
+}
+
+function bindTeacherEvents(){
+  bindTabButtons('teacherTab');
+
+  document.querySelectorAll('details.expander[data-course]').forEach(d=>{
+    d.addEventListener('toggle', ()=>{
+      const key = 't-'+d.dataset.course;
+      if(d.open) state.openDetails.add(key); else state.openDetails.delete(key);
+    });
+  });
+
+  const createBtn = document.getElementById('create-course-btn');
+  if(createBtn) createBtn.onclick = async ()=>{
+    const title = document.getElementById('new-course-title').value.trim();
+    const desc = document.getElementById('new-course-desc').value.trim();
+    if(!title){ showToast('Give the course a title first.'); return; }
+    try {
+      await api('/courses', {
+        method: 'POST',
+        body: JSON.stringify({ title, description: desc })
+      });
+      await refreshDb();
+      showToast('Course added.');
+      render();
+    } catch(err) {
+      showToast(err.message);
+    }
+  };
+
+  // Video Tab Selector (Upload vs YouTube)
+  document.querySelectorAll('[data-video-tab]').forEach(btn=>{
+    btn.onclick = (e)=>{
+      e.stopPropagation();
+      const [cid, tab] = btn.dataset.videoTab.split('|');
+      state.videoTabs = state.videoTabs || {};
+      state.videoTabs[cid] = tab;
+      state.openDetails.add('t-'+cid);
+      render();
+    };
+  });
+
+  // Toggle Video Preview
+  document.querySelectorAll('[data-toggle-preview]').forEach(btn=>{
+    btn.onclick = (e)=>{
+      e.stopPropagation();
+      const vid = btn.dataset.togglePreview;
+      const key = 'prev-' + vid;
+      if(state.openDetails.has(key)) state.openDetails.delete(key);
+      else state.openDetails.add(key);
+      render();
+    };
+  });
+
+  // Add Chunk Row to Draft
+  document.querySelectorAll('[data-add-chunk]').forEach(btn=>{
+    btn.onclick = (e)=>{
+      e.stopPropagation();
+      const [cid, typeKey] = btn.dataset.addChunk.split('|');
+      const isYt = typeKey === 'yt';
+      if(isYt){
+        draft.videoYtChunks[cid] = draft.videoYtChunks[cid] || [];
+        draft.videoYtChunks[cid].push({ start: '', end: '', title: '' });
+      } else {
+        draft.videoChunks[cid] = draft.videoChunks[cid] || [];
+        draft.videoChunks[cid].push({ start: '', end: '', title: '' });
+      }
+      state.openDetails.add('t-'+cid);
+      render();
+    };
+  });
+
+  // Remove Chunk Row from Draft
+  document.querySelectorAll('[data-remove-chunk]').forEach(btn=>{
+    btn.onclick = (e)=>{
+      e.stopPropagation();
+      const [cid, typeKey, cki] = btn.dataset.removeChunk.split('|');
+      const isYt = typeKey === 'yt';
+      const targetList = isYt ? draft.videoYtChunks[cid] : draft.videoChunks[cid];
+      if(targetList){
+        targetList.splice(Number(cki), 1);
+      }
+      state.openDetails.add('t-'+cid);
+      render();
+    };
+  });
+
+  // Chunk Field Input (Start, End, Title)
+  document.querySelectorAll('[data-chunk-field]').forEach(inp=>{
+    inp.oninput = (e)=>{
+      const [cid, typeKey, cki, field] = inp.dataset.chunkField.split('|');
+      const isYt = typeKey === 'yt';
+      const targetList = isYt ? (draft.videoYtChunks[cid] = draft.videoYtChunks[cid] || []) : (draft.videoChunks[cid] = draft.videoChunks[cid] || []);
+      if(targetList && targetList[Number(cki)]){
+        targetList[Number(cki)][field] = inp.value;
+      }
+    };
+  });
+
+  // Upload Local Video File
+  document.querySelectorAll('[data-upload-video]').forEach(btn=>{
+    btn.onclick = async (e)=>{
+      e.stopPropagation();
+      const cid = btn.dataset.uploadVideo;
+      const fileInput = document.getElementById(`video-file-${cid}`);
+      const titleInput = document.getElementById(`video-upload-title-${cid}`);
+      const statusEl = document.getElementById(`upload-status-${cid}`);
+
+      if(!fileInput || !fileInput.files || fileInput.files.length === 0){
+        showToast('Please choose a video file to upload.');
+        return;
+      }
+
+      const file = fileInput.files[0];
+      const title = titleInput ? titleInput.value.trim() : '';
+
+      const formData = new FormData();
+      formData.append('file', file);
+      if(title) formData.append('title', title);
+
+      // Validate and serialize chunks if provided
+      const rawChunks = draft.videoChunks[cid] || [];
+      const validChunks = [];
+      for(const item of rawChunks){
+        const s = parseTimestamp(item.start);
+        const e = parseTimestamp(item.end);
+        if(e > s){
+          validChunks.push({
+            start: s,
+            end: e,
+            title: (item.title || '').trim(),
+            start_formatted: formatTimestamp(s),
+            end_formatted: formatTimestamp(e)
+          });
+        }
+      }
+      if(validChunks.length > 0){
+        formData.append('chunks', JSON.stringify(validChunks));
+      }
+
+      btn.disabled = true;
+      if(statusEl) statusEl.textContent = `Uploading "${file.name}" (${formatBytes(file.size)})...`;
+
+      try {
+        await api(`/courses/${cid}/videos/upload`, {
+          method: 'POST',
+          body: formData
+        });
+        delete draft.videoChunks[cid];
+        await refreshDb();
+        state.openDetails.add('t-'+cid);
+        showToast('Local video uploaded successfully!');
+        render();
+      } catch(err) {
+        showToast(err.message || 'Upload failed');
+        btn.disabled = false;
+        if(statusEl) statusEl.textContent = 'Upload failed: ' + err.message;
+      }
+    };
+  });
+
+  // Add YouTube Video Link
+  document.querySelectorAll('[data-add-yt-video]').forEach(btn=>{
+    btn.onclick = async (e)=>{
+      e.stopPropagation();
+      const cid = btn.dataset.addYtVideo;
+      const title = (document.getElementById(`video-yt-title-${cid}`) || {}).value || '';
+      const url = (document.getElementById(`video-yt-url-${cid}`) || {}).value || '';
+      if(!title.trim() || !url.trim()){ showToast('Provide both video title and YouTube URL.'); return; }
+
+      // Validate and serialize chunks if provided
+      const rawYtChunks = draft.videoYtChunks[cid] || [];
+      const validYtChunks = [];
+      for(const item of rawYtChunks){
+        const s = parseTimestamp(item.start);
+        const e = parseTimestamp(item.end);
+        if(e > s){
+          validYtChunks.push({
+            start: s,
+            end: e,
+            title: (item.title || '').trim()
+          });
+        }
+      }
+
+      try {
+        await api(`/courses/${cid}/videos`, {
+          method: 'POST',
+          body: JSON.stringify({
+            title: title.trim(),
+            youtube_url: url.trim(),
+            chunks: validYtChunks
+          })
+        });
+        delete draft.videoYtChunks[cid];
+        await refreshDb();
+        state.openDetails.add('t-'+cid);
+        showToast('YouTube video added.');
+        render();
+      } catch(err) {
+        showToast(err.message);
+      }
+    };
+  });
+
+  // Remove Video
+  document.querySelectorAll('[data-remove-video]').forEach(btn=>{
+    btn.onclick = async (e)=>{
+      e.stopPropagation();
+      const [cid, vid] = btn.dataset.removeVideo.split('|');
+      try {
+        await api(`/courses/${cid}/videos/${vid}`, { method: 'DELETE' });
+        await refreshDb();
+        state.openDetails.add('t-'+cid);
+        showToast('Video removed.');
+        render();
+      } catch(err) {
+        showToast(err.message);
+      }
+    };
+  });
+
+  // Presentation Tab Selector (Upload vs Embed)
+  document.querySelectorAll('[data-pres-tab]').forEach(btn=>{
+    btn.onclick = (e)=>{
+      e.stopPropagation();
+      const [cid, tab] = btn.dataset.presTab.split('|');
+      state.presentationTabs = state.presentationTabs || {};
+      state.presentationTabs[cid] = tab;
+      state.openDetails.add('t-'+cid);
+      render();
+    };
+  });
+
+  // Toggle Presentation Preview
+  document.querySelectorAll('[data-toggle-pres-preview]').forEach(btn=>{
+    btn.onclick = (e)=>{
+      e.stopPropagation();
+      const pid = btn.dataset.togglePresPreview;
+      const key = 'prev-pres-' + pid;
+      if(state.openDetails.has(key)) state.openDetails.delete(key);
+      else state.openDetails.add(key);
+      render();
+    };
+  });
+
+  // Toggle Slide Mapper Drawer
+  document.querySelectorAll('[data-toggle-slide-mapper]').forEach(btn=>{
+    btn.onclick = (e)=>{
+      e.stopPropagation();
+      const pid = btn.dataset.toggleSlideMapper;
+      const key = 'mapper-pres-' + pid;
+      if(state.openDetails.has(key)) state.openDetails.delete(key);
+      else state.openDetails.add(key);
+      render();
+    };
+  });
+
+  // Save All Slide Mappings (Table)
+  document.querySelectorAll('[data-save-slide-mapper]').forEach(btn=>{
+    btn.onclick = async (e)=>{
+      e.stopPropagation();
+      const [cid, pid] = btn.dataset.saveSlideMapper.split('|');
+      const course = findCourse(cid);
+      const pres = course ? (course.presentations||[]).find(x=>x.id===pid) : null;
+      if(!pres) return;
+
+      const mappings = [];
+      const pSlides = pres.slides || [];
+      for(let i = 0; i < pSlides.length; i++){
+        const vidSelect = document.querySelector(`select[data-mapper-vid="${pid}|${i}"]`);
+        const startInp = document.querySelector(`input[data-mapper-start="${pid}|${i}"]`);
+        const endInp = document.querySelector(`input[data-mapper-end="${pid}|${i}"]`);
+        
+        const vid = vidSelect ? vidSelect.value : null;
+        const startSec = startInp ? parseTimestamp(startInp.value) : null;
+        const endSec = endInp ? parseTimestamp(endInp.value) : null;
+
+        mappings.push({
+          slide_index: i,
+          video_id: vid ? vid : null,
+          video_start: (startSec > 0) ? startSec : null,
+          video_end: (endSec > 0) ? endSec : null
+        });
+      }
+
+      btn.disabled = true;
+      try {
+        await api(`/courses/${cid}/presentations/${pid}/slide-mappings`, {
+          method: 'PUT',
+          body: JSON.stringify({ mappings })
+        });
+        await refreshDb();
+        state.openDetails.add('t-'+cid);
+        state.openDetails.add('mapper-pres-'+pid);
+        showToast('Slide-to-video links saved successfully!');
+        render();
+      } catch(err) {
+        showToast(err.message || 'Failed to save slide links');
+        btn.disabled = false;
+      }
+    };
+  });
+
+  // Save Single Slide Mapping (Inside Slide Stage)
+  document.querySelectorAll('[data-save-single-slide-map]').forEach(btn=>{
+    btn.onclick = async (e)=>{
+      e.stopPropagation();
+      const [cid, pid, sli] = btn.dataset.saveSingleSlideMap.split('|');
+      const slideIdx = Number(sli);
+      const selectEl = document.querySelector(`select[data-assign-slide-video="${pid}|${slideIdx}"]`);
+      const vid = selectEl ? selectEl.value : null;
+
+      const course = findCourse(cid);
+      const pres = course ? (course.presentations||[]).find(x=>x.id===pid) : null;
+      if(!pres) return;
+
+      const pSlides = pres.slides || [];
+      const mappings = pSlides.map((s, idx)=>({
+        slide_index: idx,
+        video_id: (idx === slideIdx) ? (vid || null) : (s.videoId || s.video_id || null),
+        video_start: s.videoStart || s.video_start || null,
+        video_end: s.videoEnd || s.video_end || null
+      }));
+
+      btn.disabled = true;
+      try {
+        await api(`/courses/${cid}/presentations/${pid}/slide-mappings`, {
+          method: 'PUT',
+          body: JSON.stringify({ mappings })
+        });
+        await refreshDb();
+        state.openDetails.add('t-'+cid);
+        state.openDetails.add('prev-pres-'+pid);
+        showToast(`Slide ${slideIdx + 1} video link updated!`);
+        render();
+      } catch(err) {
+        showToast(err.message || 'Failed to update slide link');
+        btn.disabled = false;
+      }
+    };
+  });
+
+  // Select Course Presentation Tab
+  document.querySelectorAll('[data-select-course-pres]').forEach(btn=>{
+    btn.onclick = (e)=>{
+      e.stopPropagation();
+      const [cid, pid] = btn.dataset.selectCoursePres.split('|');
+      state.activeCoursePres = state.activeCoursePres || {};
+      state.activeCoursePres[cid] = pid;
+      render();
+    };
+  });
+
+  // Upload Local PPTX File
+  document.querySelectorAll('[data-upload-pres]').forEach(btn=>{
+    btn.onclick = async (e)=>{
+      e.stopPropagation();
+      const cid = btn.dataset.uploadPres;
+      const fileInput = document.getElementById(`pres-file-${cid}`);
+      const titleInput = document.getElementById(`pres-upload-title-${cid}`);
+      const descInput = document.getElementById(`pres-upload-desc-${cid}`);
+      const statusEl = document.getElementById(`pres-upload-status-${cid}`);
+
+      if(!fileInput || !fileInput.files || fileInput.files.length === 0){
+        showToast('Please select a PowerPoint file (.pptx, .ppt) to upload.');
+        return;
+      }
+
+      const file = fileInput.files[0];
+      const title = titleInput ? titleInput.value.trim() : '';
+      const desc = descInput ? descInput.value.trim() : '';
+
+      const formData = new FormData();
+      formData.append('file', file);
+      if(title) formData.append('title', title);
+      if(desc) formData.append('description', desc);
+
+      btn.disabled = true;
+      if(statusEl) statusEl.textContent = `Uploading & parsing "${file.name}" (${formatBytes(file.size)})...`;
+
+      try {
+        await api(`/courses/${cid}/presentations/upload`, {
+          method: 'POST',
+          body: formData
+        });
+        await refreshDb();
+        state.openDetails.add('t-'+cid);
+        showToast('PowerPoint presentation uploaded & parsed!');
+        render();
+      } catch(err) {
+        showToast(err.message || 'Presentation upload failed');
+        btn.disabled = false;
+        if(statusEl) statusEl.textContent = 'Upload failed: ' + err.message;
+      }
+    };
+  });
+
+  // Add Online Slides Link (Google Slides, etc.)
+  document.querySelectorAll('[data-add-embed-pres]').forEach(btn=>{
+    btn.onclick = async (e)=>{
+      e.stopPropagation();
+      const cid = btn.dataset.addEmbedPres;
+      const title = (document.getElementById(`pres-embed-title-${cid}`) || {}).value || '';
+      const url = (document.getElementById(`pres-embed-url-${cid}`) || {}).value || '';
+      const desc = (document.getElementById(`pres-embed-desc-${cid}`) || {}).value || '';
+
+      if(!title.trim() || !url.trim()){
+        showToast('Provide both presentation title and embed/share URL.');
+        return;
+      }
+
+      try {
+        await api(`/courses/${cid}/presentations`, {
+          method: 'POST',
+          body: JSON.stringify({
+            title: title.trim(),
+            description: desc.trim(),
+            embed_url: url.trim()
+          })
+        });
+        await refreshDb();
+        state.openDetails.add('t-'+cid);
+        showToast('Online slide deck added.');
+        render();
+      } catch(err) {
+        showToast(err.message);
+      }
+    };
+  });
+
+  // Remove Presentation
+  document.querySelectorAll('[data-remove-pres]').forEach(btn=>{
+    btn.onclick = async (e)=>{
+      e.stopPropagation();
+      const [cid, pid] = btn.dataset.removePres.split('|');
+      try {
+        await api(`/courses/${cid}/presentations/${pid}`, { method: 'DELETE' });
+        await refreshDb();
+        state.openDetails.add('t-'+cid);
+        showToast('Presentation removed.');
+        render();
+      } catch(err) {
+        showToast(err.message);
+      }
+    };
+  });
+
+
+
+  document.querySelectorAll('[data-add-question]').forEach(btn=>{
+    btn.onclick = ()=>{
+      const cid = btn.dataset.addQuestion;
+      draft.quizBuilders[cid] = draft.quizBuilders[cid] || [];
+      draft.quizBuilders[cid].push({ text:'', options:['','','',''], correct:0 });
+      state.openDetails.add('t-'+cid);
+      render();
+    };
+  });
+
+  document.querySelectorAll('[data-remove-question]').forEach(btn=>{
+    btn.onclick = ()=>{
+      const [cid, qi] = btn.dataset.removeQuestion.split('|');
+      draft.quizBuilders[cid].splice(Number(qi),1);
+      state.openDetails.add('t-'+cid);
+      render();
+    };
+  });
+
+  document.querySelectorAll('[data-qtext]').forEach(inp=>{
+    inp.oninput = ()=>{
+      const [cid, qi] = inp.dataset.qtext.split('|');
+      draft.quizBuilders[cid][Number(qi)].text = inp.value;
+    };
+  });
+  document.querySelectorAll('[data-qopt]').forEach(inp=>{
+    inp.oninput = ()=>{
+      const [cid, qi, oi] = inp.dataset.qopt.split('|');
+      draft.quizBuilders[cid][Number(qi)].options[Number(oi)] = inp.value;
+    };
+  });
+  document.querySelectorAll('[data-qcorrect]').forEach(inp=>{
+    inp.onchange = ()=>{
+      const [cid, qi, oi] = inp.dataset.qcorrect.split('|');
+      draft.quizBuilders[cid][Number(qi)].correct = Number(oi);
+    };
+  });
+
+  document.querySelectorAll('[data-save-quiz]').forEach(btn=>{
+    btn.onclick = async ()=>{
+      const cid = btn.dataset.saveQuiz;
+      const titleInput = document.getElementById(`quiz-title-${cid}`);
+      const title = titleInput.value.trim();
+      const qs = draft.quizBuilders[cid] || [];
+      if(!title){ showToast('Give the quiz a title.'); return; }
+      if(qs.length===0){ showToast('Add at least one question.'); return; }
+      for(const q of qs){
+        if(!q.text.trim() || q.options.some(o=>!o.trim())){
+          showToast('Fill in every question and all four options.'); return;
+        }
+      }
+      const questionsPayload = qs.map(q=>({
+        text: q.text.trim(),
+        options: q.options.map(o=>o.trim()),
+        correct_index: q.correct
+      }));
+      try {
+        await api(`/courses/${cid}/quizzes`, {
+          method: 'POST',
+          body: JSON.stringify({ title, questions: questionsPayload })
+        });
+        delete draft.quizBuilders[cid];
+        state.openDetails.add('t-'+cid);
+        await refreshDb();
+        showToast('Quiz saved.');
+        render();
+      } catch(err) {
+        showToast(err.message);
+      }
+    };
+  });
+
+  document.querySelectorAll('[data-remove-quiz]').forEach(btn=>{
+    btn.onclick = async ()=>{
+      const [cid, qid] = btn.dataset.removeQuiz.split('|');
+      try {
+        await api(`/courses/${cid}/quizzes/${qid}`, { method: 'DELETE' });
+        await refreshDb();
+        render();
+      } catch(err) {
+        showToast(err.message);
+      }
+    };
+  });
+
+  // Course Edit Event Handlers
+  document.querySelectorAll('[data-toggle-edit-course]').forEach(btn=>{
+    btn.onclick = (e)=>{
+      e.preventDefault();
+      e.stopPropagation();
+      const cid = btn.dataset.toggleEditCourse;
+      state.editingCourses = state.editingCourses || {};
+      state.editingCourses[cid] = !state.editingCourses[cid];
+      state.openDetails.add('t-'+cid);
+      render();
+      if(state.editingCourses[cid]){
+        const input = document.getElementById(`edit-course-title-${cid}`);
+        if(input){
+          input.focus();
+          input.select();
+        }
+      }
+    };
+  });
+
+  document.querySelectorAll('[data-cancel-edit-course]').forEach(btn=>{
+    btn.onclick = (e)=>{
+      e.preventDefault();
+      e.stopPropagation();
+      const cid = btn.dataset.cancelEditCourse;
+      if(state.editingCourses){
+        delete state.editingCourses[cid];
+      }
+      state.openDetails.add('t-'+cid);
+      render();
+    };
+  });
+
+  document.querySelectorAll('[data-save-course]').forEach(btn=>{
+    btn.onclick = async (e)=>{
+      e.preventDefault();
+      e.stopPropagation();
+      const cid = btn.dataset.saveCourse;
+      const titleInput = document.getElementById(`edit-course-title-${cid}`);
+      const descInput = document.getElementById(`edit-course-desc-${cid}`);
+      const title = titleInput ? titleInput.value.trim() : '';
+      const description = descInput ? descInput.value.trim() : '';
+      if(!title){
+        showToast('Give the course a title.');
+        return;
+      }
+      try {
+        await api(`/courses/${cid}`, {
+          method: 'PUT',
+          body: JSON.stringify({ title, description })
+        });
+        if(state.editingCourses){
+          delete state.editingCourses[cid];
+        }
+        await refreshDb();
+        state.openDetails.add('t-'+cid);
+        showToast('Course updated.');
+        render();
+      } catch(err) {
+        showToast(err.message);
+      }
+    };
+  });
+
+  document.querySelectorAll('[id^="edit-course-title-"]').forEach(inp=>{
+    inp.onkeydown = (e)=>{
+      if(e.key === 'Enter'){
+        e.preventDefault();
+        const cid = inp.id.replace('edit-course-title-', '');
+        const saveBtn = document.querySelector(`[data-save-course="${cid}"]`);
+        if(saveBtn) saveBtn.click();
+      }
+    };
+  });
+
+  document.querySelectorAll('[data-delete-course]').forEach(btn=>{
+    btn.onclick = async ()=>{
+      const cid = btn.dataset.deleteCourse;
+      if(!confirm('Delete this course and all its content? This cannot be undone.')) return;
+      try {
+        await api(`/courses/${cid}`, { method: 'DELETE' });
+        await refreshDb();
+        showToast('Course deleted.');
+        render();
+      } catch(err) {
+        showToast(err.message);
+      }
+    };
+  });
+
+  document.querySelectorAll('[data-approve]').forEach(btn=>{
+    btn.onclick = async ()=>{
+      const [cid, sid] = btn.dataset.approve.split('|');
+      try {
+        await api(`/courses/${cid}/enrollment-requests/${sid}/approve`, { method: 'POST' });
+        await refreshDb();
+        showToast('Student approved.');
+        render();
+      } catch(err) {
+        showToast(err.message);
+      }
+    };
+  });
+
+  document.querySelectorAll('[data-reject]').forEach(btn=>{
+    btn.onclick = async ()=>{
+      const [cid, sid] = btn.dataset.reject.split('|');
+      try {
+        await api(`/courses/${cid}/enrollment-requests/${sid}/decline`, { method: 'POST' });
+        await refreshDb();
+        render();
+      } catch(err) {
+        showToast(err.message);
+      }
+    };
+  });
+
+  document.querySelectorAll('[data-remove-student]').forEach(btn=>{
+    btn.onclick = async ()=>{
+      const [cid, sid] = btn.dataset.removeStudent.split('|');
+      try {
+        await api(`/courses/${cid}/students/${sid}`, { method: 'DELETE' });
+        await refreshDb();
+        render();
+      } catch(err) {
+        showToast(err.message);
+      }
+    };
+  });
+}
+
+function bindStudentEvents(){
+  bindTabButtons('studentTab');
+
+  document.querySelectorAll('details.expander[data-scourse]').forEach(d=>{
+    d.addEventListener('toggle', ()=>{
+      const key = 's-'+d.dataset.scourse;
+      if(d.open) state.openDetails.add(key); else state.openDetails.delete(key);
+    });
+  });
+
+  document.querySelectorAll('[data-request]').forEach(btn=>{
+    btn.onclick = async ()=>{
+      const cid = btn.dataset.request;
+      try {
+        await api(`/courses/${cid}/enrollment-requests`, { method: 'POST' });
+        await refreshDb();
+        showToast('Request sent.');
+        render();
+      } catch(err) {
+        showToast(err.message);
+      }
+    };
+  });
+
+  document.querySelectorAll('[data-take-quiz]').forEach(btn=>{
+    btn.onclick = ()=>{
+      const [cid, qid] = btn.dataset.takeQuiz.split('|');
+      state.activeQuiz = { courseId: cid, quizId: qid };
+      draft.quizAnswers[qid] = {};
+      render();
+    };
+  });
+
+  document.querySelectorAll('[data-cancel-quiz]').forEach(btn=>{
+    btn.onclick = ()=>{ state.activeQuiz = null; render(); };
+  });
+
+  document.querySelectorAll('[data-take-answer]').forEach(inp=>{
+    inp.onchange = ()=>{
+      const [quizId, qId, oi] = inp.dataset.takeAnswer.split('|');
+      draft.quizAnswers[quizId] = draft.quizAnswers[quizId] || {};
+      draft.quizAnswers[quizId][qId] = Number(oi);
+    };
+  });
+
+  document.querySelectorAll('[data-submit-quiz]').forEach(btn=>{
+    btn.onclick = async ()=>{
+      const [cid, qid] = btn.dataset.submitQuiz.split('|');
+      const course = findCourse(cid);
+      const quiz = findQuiz(course, qid);
+      const answers = draft.quizAnswers[qid] || {};
+      if(quiz && Object.keys(answers).length < (quiz.questions||[]).length){
+        showToast('Answer every question before submitting.'); return;
+      }
+      try {
+        const result = await api(`/quizzes/${qid}/attempts`, {
+          method: 'POST',
+          body: JSON.stringify({ answers })
+        });
+        state.activeQuiz = null;
+        await refreshDb();
+        showToast(`Scored ${result.score}/${result.total} (${result.percent}%).`);
+        render();
+      } catch(err) {
+        showToast(err.message);
+      }
+    };
+  });
+}
+
+function bindVideoPlayerEvents(){
+  // 1. Chunk Stepper Direct Selection
+  document.querySelectorAll('[data-set-chunk]').forEach(btn=>{
+    btn.onclick = (e)=>{
+      e.stopPropagation();
+      const [vid, cki] = btn.dataset.setChunk.split('|');
+      state.videoCurrentChunk = state.videoCurrentChunk || {};
+      state.videoCurrentChunk[vid] = Number(cki);
+      render();
+      setTimeout(()=>{
+        const vEl = document.getElementById('player-' + vid);
+        if(vEl && vEl.tagName === 'VIDEO'){
+          const startSec = Number(vEl.dataset.chunkStart || 0);
+          vEl.currentTime = startSec;
+          vEl.play().catch(()=>{});
+        }
+      }, 50);
+    };
+  });
+
+  // 2. Next Chunk Button
+  document.querySelectorAll('[data-next-chunk]').forEach(btn=>{
+    btn.onclick = (e)=>{
+      e.stopPropagation();
+      const vid = btn.dataset.nextChunk;
+      state.videoCurrentChunk = state.videoCurrentChunk || {};
+      state.videoCurrentChunk[vid] = (state.videoCurrentChunk[vid] || 0) + 1;
+      render();
+      setTimeout(()=>{
+        const vEl = document.getElementById('player-' + vid);
+        if(vEl && vEl.tagName === 'VIDEO'){
+          const startSec = Number(vEl.dataset.chunkStart || 0);
+          vEl.currentTime = startSec;
+          vEl.play().catch(()=>{});
+        }
+      }, 50);
+    };
+  });
+
+  // 3. Prev Chunk Button
+  document.querySelectorAll('[data-prev-chunk]').forEach(btn=>{
+    btn.onclick = (e)=>{
+      e.stopPropagation();
+      const vid = btn.dataset.prevChunk;
+      state.videoCurrentChunk = state.videoCurrentChunk || {};
+      state.videoCurrentChunk[vid] = Math.max(0, (state.videoCurrentChunk[vid] || 0) - 1);
+      render();
+      setTimeout(()=>{
+        const vEl = document.getElementById('player-' + vid);
+        if(vEl && vEl.tagName === 'VIDEO'){
+          const startSec = Number(vEl.dataset.chunkStart || 0);
+          vEl.currentTime = startSec;
+          vEl.play().catch(()=>{});
+        }
+      }, 50);
+    };
+  });
+
+  // 4. Replay Current Chunk Button
+  document.querySelectorAll('[data-replay-chunk]').forEach(btn=>{
+    btn.onclick = (e)=>{
+      e.stopPropagation();
+      const vid = btn.dataset.replayChunk;
+      const vEl = document.getElementById('player-' + vid);
+      if(vEl && vEl.tagName === 'VIDEO'){
+        const startSec = Number(vEl.dataset.chunkStart || 0);
+        vEl.currentTime = startSec;
+        vEl.play().catch(()=>{});
+      }
+    };
+  });
+
+  // 5. Video Element Time Enforcement & Chunk Boundary Clamping
+  document.querySelectorAll('video[data-chunk-start]').forEach(vEl=>{
+    const vid = vEl.dataset.vid;
+    const startSec = Number(vEl.dataset.chunkStart || 0);
+    const endSec = Number(vEl.dataset.chunkEnd || 0);
+
+    const checkAndInitTime = ()=>{
+      if(vEl.currentTime < startSec || (endSec > startSec && vEl.currentTime > endSec)){
+        vEl.currentTime = startSec;
+      }
+    };
+    vEl.addEventListener('loadedmetadata', checkAndInitTime, { once: true });
+    if(vEl.readyState >= 1) checkAndInitTime();
+
+    vEl.ontimeupdate = ()=>{
+      if(endSec > startSec){
+        if(vEl.currentTime < startSec - 0.2){
+          vEl.currentTime = startSec;
+        }
+        if(vEl.currentTime >= endSec){
+          vEl.pause();
+          vEl.currentTime = endSec;
+          const statusEl = document.getElementById('chunk-status-' + vid);
+          if(statusEl) statusEl.textContent = 'Segment complete! Click Next to proceed ➔';
+          const nextBtn = document.getElementById('btn-next-chunk-' + vid);
+          if(nextBtn){
+            nextBtn.classList.add('pulse-highlight');
+          }
+        }
+      }
+    };
+  });
+}
+
+function bindPresentationViewerEvents(){
+  // 1. Direct Slide Chip Click
+  document.querySelectorAll('[data-pres-slide]').forEach(btn=>{
+    btn.onclick = (e)=>{
+      e.stopPropagation();
+      const [pid, sli] = btn.dataset.presSlide.split('|');
+      state.activePresentationSlide[pid] = Number(sli);
+      render();
+    };
+  });
+
+  // 2. Next Slide Button
+  document.querySelectorAll('[data-pres-next]').forEach(btn=>{
+    btn.onclick = (e)=>{
+      e.stopPropagation();
+      const pid = btn.dataset.presNext;
+      let maxSlides = 1000;
+      for(const c of state.db.courses || []){
+        const p = (c.presentations||[]).find(x=>x.id === pid);
+        if(p && p.slides && p.slides.length){ maxSlides = p.slides.length; break; }
+      }
+      const cur = state.activePresentationSlide[pid] || 0;
+      if(cur < maxSlides - 1){
+        state.activePresentationSlide[pid] = cur + 1;
+        render();
+      }
+    };
+  });
+
+  // 3. Prev Slide Button
+  document.querySelectorAll('[data-pres-prev]').forEach(btn=>{
+    btn.onclick = (e)=>{
+      e.stopPropagation();
+      const pid = btn.dataset.presPrev;
+      const cur = state.activePresentationSlide[pid] || 0;
+      if(cur > 0){
+        state.activePresentationSlide[pid] = cur - 1;
+        render();
+      }
+    };
+  });
+
+  // 4. Jump to Slide Dropdown
+  document.querySelectorAll('[data-pres-jump]').forEach(sel=>{
+    sel.onchange = (e)=>{
+      e.stopPropagation();
+      const pid = sel.dataset.presJump;
+      state.activePresentationSlide[pid] = Number(sel.value);
+      render();
+    };
+  });
+
+  // 5. Toggle Speaker Notes
+  document.querySelectorAll('[data-toggle-pres-notes]').forEach(btn=>{
+    btn.onclick = (e)=>{
+      e.stopPropagation();
+      const pid = btn.dataset.togglePresNotes;
+      state.presentationNotesOpen[pid] = !state.presentationNotesOpen[pid];
+      render();
+    };
+  });
+
+  // 6. Open Fullscreen Mode
+  document.querySelectorAll('[data-pres-fullscreen]').forEach(btn=>{
+    btn.onclick = (e)=>{
+      e.stopPropagation();
+      const pid = btn.dataset.presFullscreen;
+      state.fullscreenPresentationId = pid;
+      render();
+    };
+  });
+
+  // 7. Exit Fullscreen Mode
+  const closeFsBtn = document.getElementById('btn-close-fullscreen');
+  if(closeFsBtn){
+    closeFsBtn.onclick = (e)=>{
+      e.stopPropagation();
+      state.fullscreenPresentationId = null;
+      render();
+    };
+  }
+
+  // 8. Play Linked Video Button (Top Bar / Fullscreen)
+  document.querySelectorAll('[data-play-linked-video]').forEach(btn=>{
+    btn.onclick = (e)=>{
+      e.stopPropagation();
+      const pid = btn.dataset.playLinkedVideo;
+      if(state.fullscreenPresentationId){
+        state.fullscreenPresentationId = null;
+        render();
+      }
+
+      setTimeout(()=>{
+        const wrapEl = document.getElementById('synced-video-wrap-' + pid);
+        if(wrapEl){
+          wrapEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        const container = wrapEl || document;
+        const vEl = container.querySelector('video');
+        if(vEl){
+          const startSec = Number(vEl.dataset.chunkStart || 0);
+          if(vEl.currentTime < startSec - 0.2){
+            vEl.currentTime = startSec;
+          }
+          if(vEl.paused){
+            vEl.play().catch(()=>{});
+            btn.innerHTML = '⏸ Pause Video';
+          } else {
+            vEl.pause();
+            btn.innerHTML = '▶ Play Video';
+          }
+        } else {
+          showToast('Playing synchronized video...');
+        }
+      }, 100);
+    };
+  });
+}
+
+// Global Keyboard Navigation for Slide Decks
+window.addEventListener('keydown', (e)=>{
+  if(state.fullscreenPresentationId){
+    const pid = state.fullscreenPresentationId;
+    let maxSlides = 1000;
+    for(const c of state.db.courses || []){
+      const p = (c.presentations||[]).find(x=>x.id === pid);
+      if(p && p.slides && p.slides.length){ maxSlides = p.slides.length; break; }
+    }
+    const cur = state.activePresentationSlide[pid] || 0;
+
+    if(e.key === 'ArrowRight' || e.key === ' '){
+      e.preventDefault();
+      if(cur < maxSlides - 1){
+        state.activePresentationSlide[pid] = cur + 1;
+        render();
+      }
+    } else if(e.key === 'ArrowLeft'){
+      e.preventDefault();
+      if(cur > 0){
+        state.activePresentationSlide[pid] = cur - 1;
+        render();
+      }
+    } else if(e.key === 'Escape'){
+      e.preventDefault();
+      state.fullscreenPresentationId = null;
+      render();
+    }
+  }
+});
+
+/* ================= UTIL ================= */
+function escapeHtml(s){
+  return String(s??'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+function escapeAttr(s){ return escapeHtml(s); }
+
+loadAll();
+</script>
+</body>
+</html>
