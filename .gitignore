@@ -3,6 +3,12 @@
 !.env.example
 *.db
 uploads/
+pendriveData/
+!pendriveData/
+!pendriveData/uploads/
+pendriveData/roll_call.db
+pendriveData/uploads/videos/
+pendriveData/uploads/presentations/
 __pycache__/
 .pytest_cache/
 .venv/

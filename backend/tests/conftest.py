@@ -1,9 +1,16 @@
+import os
+import tempfile
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
 from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
+
+_test_data_dir = tempfile.TemporaryDirectory(prefix="rollcall-test-data-")
+os.environ["PENDRIVE_DATA_DIR"] = _test_data_dir.name
+os.environ.pop("DATABASE_URL", None)
 
 from backend.app.db import get_session
 from backend.app.main import app

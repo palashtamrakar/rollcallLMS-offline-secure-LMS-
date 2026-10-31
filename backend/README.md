@@ -19,16 +19,34 @@ A production-ready Python REST API backing the **Roll Call** two-persona Learnin
 
 ## Setup & Running
 
+### Data location
+
+The launchers store the SQLite database and uploaded files in `pendriveData/`. On first
+migration, run `python3 backend/storage_bootstrap.py --initialize-simulation` from the
+project root to copy the current `roll_call.db` and `uploads/` into that folder. The
+migration verifies the database table counts and uploaded-file hashes before the app uses
+the new location. The existing source files are left in place until the copy is verified.
+
+The launchers check for `pendriveData/` immediately and retry every five seconds if it is
+not found. To move the data to a USB later, move the entire `pendriveData` folder to the
+root of the USB drive. Start with `start.command` or `start.sh` on macOS, or `start.bat` on
+Windows. The launcher checks only mounted-drive roots for the marker file and refuses to
+start if there are zero or multiple matches. The web server binds to localhost only.
+The drive is not encrypted, so its contents remain accessible to the host while mounted;
+stop the LMS cleanly before removing the drive.
+
 ### 1. Activate Environment & Install Dependencies
 ```bash
 # Using the pre-configured virtual environment:
 ./backend/.venv/bin/pip install -r backend/requirements.txt
 ```
 
-### 2. Run the Development Server
-```bash
-./backend/.venv/bin/uvicorn backend.app.main:app --reload --port 8000
-```
+### 2. Start the LMS
+
+Use `./start.command` or `./start.sh` on macOS, or `start.bat` on Windows. These launchers
+locate the marked `pendriveData` folder, wait and retry every five seconds if it is
+unavailable, then start the server on localhost. Avoid starting Uvicorn directly because
+that bypasses drive discovery.
 
 Once running:
 - Open `http://localhost:8000` to interact with the LMS frontend.
@@ -75,4 +93,3 @@ Run the complete test suite with `pytest`:
 | `POST` | `/quizzes/{id}/attempts` | Submit answers and receive server-graded score | Enrolled Student |
 | `GET` | `/students/{id}/results` | View student's attempts history | Self or Teacher |
 | `GET` | `/courses/{id}/results` | View student scorecard & sparkline data | Teacher |
-

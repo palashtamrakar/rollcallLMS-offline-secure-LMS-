@@ -63,7 +63,7 @@ def build_video_response(video: Video) -> VideoResponse:
         video_type=video.video_type or "youtube",
         youtube_id=video.youtube_id,
         file_name=video.file_name,
-        file_path=video.file_path,
+        file_path=video.file_name if video.video_type == "local" else None,
         content_type=video.content_type,
         file_size=video.file_size,
         url=stream_url,
@@ -200,7 +200,7 @@ async def upload_local_video(
         video_type="local",
         youtube_id=None,
         file_name=stored_filename,
-        file_path=str(dest_path),
+        file_path=stored_filename,
         content_type=content_type,
         file_size=file_size,
         chunks_json=json.dumps(parsed_chunks),
@@ -228,7 +228,7 @@ def stream_video(
             detail="This video is an external link (YouTube), not a local video file",
         )
 
-    file_path = Path(video.file_path) if video.file_path else (UPLOAD_DIR / (video.file_name or ""))
+    file_path = UPLOAD_DIR / (video.file_name or "")
     if not file_path.exists() or not file_path.is_file():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Video file not found on disk")
 
@@ -257,17 +257,11 @@ def remove_video(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Video not found in this course")
 
     # Clean up local file from disk if local video
-    if video.video_type == "local":
-        if video.file_path:
-            p = Path(video.file_path)
-            if p.exists() and p.is_file():
-                p.unlink(missing_ok=True)
-        if video.file_name:
-            p = UPLOAD_DIR / video.file_name
-            if p.exists() and p.is_file():
-                p.unlink(missing_ok=True)
+    if video.video_type == "local" and video.file_name:
+        file_path = UPLOAD_DIR / video.file_name
+        if file_path.exists() and file_path.is_file():
+            file_path.unlink(missing_ok=True)
 
     session.delete(video)
     session.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
-

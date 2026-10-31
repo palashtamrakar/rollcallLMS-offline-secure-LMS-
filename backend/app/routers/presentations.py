@@ -216,7 +216,7 @@ async def upload_presentation(
         presentation_type="local",
         embed_url=None,
         file_name=stored_filename,
-        file_path=str(dest_path),
+        file_path=stored_filename,
         content_type=content_type,
         file_size=file_size,
         slide_count=slide_count,
@@ -287,11 +287,7 @@ def download_presentation(
             detail="This presentation is an external embed link, not a local file",
         )
 
-    file_path = (
-        Path(presentation.file_path)
-        if presentation.file_path
-        else (PRESENTATIONS_DIR / (presentation.file_name or ""))
-    )
+    file_path = PRESENTATIONS_DIR / (presentation.file_name or "")
     if not file_path.exists() or not file_path.is_file():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Presentation file not found on disk")
 
@@ -338,14 +334,10 @@ def remove_presentation(
 
     # Clean up local presentation file and extracted image directory
     if presentation.presentation_type == "local":
-        if presentation.file_path:
-            p = Path(presentation.file_path)
-            if p.exists() and p.is_file():
-                p.unlink(missing_ok=True)
         if presentation.file_name:
-            p = PRESENTATIONS_DIR / presentation.file_name
-            if p.exists() and p.is_file():
-                p.unlink(missing_ok=True)
+            file_path = PRESENTATIONS_DIR / presentation.file_name
+            if file_path.exists() and file_path.is_file():
+                file_path.unlink(missing_ok=True)
 
         pres_folder = PRESENTATIONS_DIR / presentation.id
         if pres_folder.exists() and pres_folder.is_dir():
