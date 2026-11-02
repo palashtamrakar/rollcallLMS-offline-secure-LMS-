@@ -1,5 +1,5 @@
 import shutil
-from pathlib import Path
+
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlmodel import Session, select
@@ -184,17 +184,12 @@ def delete_course(
 
     # Clean up local video files from disk
     for v in course.videos:
-        if v.video_type == "local":
-            if v.file_path:
-                Path(v.file_path).unlink(missing_ok=True)
-            if v.file_name:
-                (UPLOAD_DIR / v.file_name).unlink(missing_ok=True)
+        if v.video_type == "local" and v.file_name:
+            (UPLOAD_DIR / v.file_name).unlink(missing_ok=True)
 
     # Clean up local presentation files and extracted images from disk
     for p in (course.presentations or []):
         if p.presentation_type == "local":
-            if p.file_path:
-                Path(p.file_path).unlink(missing_ok=True)
             if p.file_name:
                 (PRESENTATIONS_DIR / p.file_name).unlink(missing_ok=True)
             pres_folder = PRESENTATIONS_DIR / p.id
@@ -204,4 +199,3 @@ def delete_course(
     session.delete(course)
     session.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
-

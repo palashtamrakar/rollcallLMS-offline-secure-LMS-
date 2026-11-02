@@ -4,7 +4,16 @@ from sqlalchemy import event, text
 from sqlalchemy.engine import Engine
 from sqlmodel import Session, SQLModel, create_engine
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./roll_call.db")
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+data_dir = os.getenv("PENDRIVE_DATA_DIR")
+if not data_dir:
+    raise RuntimeError("Storage was not selected. Start Roll Call with start.sh, start.command, or start.bat.")
+
+PENDRIVE_DATA_DIR = Path(data_dir).resolve()
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    f"sqlite:///{(PENDRIVE_DATA_DIR / 'roll_call.db').as_posix()}",
+)
 
 connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
 
@@ -14,12 +23,12 @@ engine = create_engine(
     echo=False,
 )
 
-# Upload directory configuration for local videos and presentations
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
-UPLOAD_DIR = Path(os.getenv("UPLOAD_DIR", str(BASE_DIR / "uploads" / "videos")))
+UPLOAD_DIR = Path(os.getenv("UPLOAD_DIR", str(PENDRIVE_DATA_DIR / "uploads" / "videos")))
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
-PRESENTATIONS_DIR = Path(os.getenv("PRESENTATIONS_DIR", str(BASE_DIR / "uploads" / "presentations")))
+PRESENTATIONS_DIR = Path(
+    os.getenv("PRESENTATIONS_DIR", str(PENDRIVE_DATA_DIR / "uploads" / "presentations"))
+)
 PRESENTATIONS_DIR.mkdir(parents=True, exist_ok=True)
 
 
@@ -111,4 +120,3 @@ def init_db() -> None:
 def get_session():
     with Session(engine) as session:
         yield session
-
